@@ -1,0 +1,5 @@
+numpy
+tiktoken
+transformers
+torch
+PyPDF2
