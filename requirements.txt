@@ -3,3 +3,4 @@ tiktoken
 transformers
 torch
 PyPDF2
+graphing

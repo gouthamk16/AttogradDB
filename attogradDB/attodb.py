@@ -1,14 +1,28 @@
 import numpy as np
 from attogradDB.embedding import BertEmbedding
+from attogradDB.indexing import HNSW
 
-## Add support for custome tokenization and tiktoken
+## Add support for custom tokenization and tiktoken
+## Log perfomance for both brute force and hnsw indexing
 
 class VectorStore:
-    def __init__(self, embedding_model="bert"):
+    def __init__(self, indexing="hnsw", embedding_model="bert"):
         self.vector = {}  
         self.index = {}
         if embedding_model == "bert":   
             self.embedding_model = BertEmbedding()
+        if indexing == "hnsw":
+            self.indexing = "hnsw"
+            self.index = HNSW()
+        elif indexing == "brute-force":
+            self.indexing = "brute-force"
+
+    def get_key_by_value(self, value):
+        for key, val in self.vector.items():
+            # Use np.array_equal for array comparison
+            if np.array_equal(val, value):
+                return key
+        return None
     
     @staticmethod
     def similarity(vector_a, vector_b, method="cosine"):
@@ -26,18 +40,25 @@ class VectorStore:
             vector_id (str): Identifier for the vector.
             input_data (str): Text input to be tokenized and stored.
             tokenizer (str): Tokenizer model to be used (default is "gpt-4").
-            max_length (int): Maximum length of the tokenized vector (default is 10).
-            padding_token (int): Padding token to be used if the sequence is shorter than max_length (default is 0).
         """
 
         tokenized_vector = np.array(self.embedding_model.embed(input_data))
         
-        self.vector[vector_id] = tokenized_vector
-        
-        self.update_index(vector_id, tokenized_vector)
+        if self.indexing == "hnsw":
+            self.vector[vector_id] = tokenized_vector
+            self.index.add_node(tokenized_vector)
+        else:
+            self.vector[vector_id] = tokenized_vector
+            self.update_index(vector_id, tokenized_vector)
 
     def add_documents(self, docs):
-        ## Create id's for each of the document
+        """
+        Create id's for each of the document
+        Add the document to the store
+
+        Args:
+            docs (List[str]): List of documents to be added to the store.
+        """
         idx = 0
         for doc in docs:
             self.add_text(f"doc_{idx}", doc)
@@ -66,10 +87,8 @@ class VectorStore:
 
         Args:
             query_text (str): Text input for the query to find similar vectors.
-            tokenizer (str): Tokenizer model to be used for tokenizing the query (default is "gpt-4").
-            max_length (int): Maximum length of the tokenized vector (default is 10).
-            padding_token (int): Padding token to be used if the sequence is shorter than max_length (default is 0).
             top_n (int): Number of top similar vectors to return (default is 5).
+            decode_results (bool): Whether to decode the results back to text (default is True).
 
         Returns:
             List[Tuple[str, float]]: List of vector IDs and their similarity scores.
@@ -77,11 +96,19 @@ class VectorStore:
         query_vector = np.array(self.embedding_model.embed(query_text))
         
         results = []
-        for existing_id, existing_vector in self.vector.items():
-            cosine_similarity = self.similarity(query_vector, existing_vector)
-            results.append((existing_id, cosine_similarity))
+
+        if self.indexing == "hnsw":
+            nearest_vectors = self.index.search(query_vector, top_n)
+            for vector in nearest_vectors:
+                cosine_similarity = self.similarity(query_vector, vector)
+                results.append((self.get_key_by_value(value=vector), cosine_similarity))
         
-        results.sort(key=lambda x: x[1], reverse=True)
+        else:
+            for existing_id, existing_vector in self.vector.items():
+                cosine_similarity = self.similarity(query_vector, existing_vector)
+                results.append((existing_id, cosine_similarity))
+        
+            results.sort(key=lambda x: x[1], reverse=True)
 
         if decode_results:
             # Return the n similar results decoded back to text

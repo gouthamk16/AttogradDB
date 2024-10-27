@@ -18,7 +18,8 @@ setup(
         "accelerate",
         "torch",
         "huggingface_hub",  # Example dependencies
-        "PyPDF2"
+        "PyPDF2",
+        "graphing"  
     ],
     classifiers=[
         "Programming Language :: Python :: 3.12.3",

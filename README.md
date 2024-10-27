@@ -15,6 +15,10 @@ To install the package, use:
 pip install attogradDB
 ```
 
+## Usage
+
+Refer to the examples folder for usage examples.
+
 ## LICENCE
 
 This project is licensed under the MIT License.
