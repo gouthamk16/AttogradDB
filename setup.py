@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="attogradDB",  # Name of your package
-    version="0.1",  # Initial version
+    version="0.2",  # Initial version
     description="A simple vector database for fast similarity search",  # Short description
     long_description=open("README.md").read(),  # Use README.md for long description
     long_description_content_type="text/markdown",
