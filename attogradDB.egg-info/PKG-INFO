@@ -1,0 +1,41 @@
+Metadata-Version: 2.1
+Name: attogradDB
+Version: 0.2
+Summary: A simple vector database for fast similarity search
+Home-page: https://github.com/yourusername/vector-db
+Author: Goutham Krishnan
+License: MIT
+Classifier: Programming Language :: Python :: 3.12.3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: tiktoken
+Requires-Dist: transformers
+Requires-Dist: accelerate
+Requires-Dist: torch
+Requires-Dist: huggingface_hub
+Requires-Dist: PyPDF2
+Requires-Dist: graphing
+
+# AttogradDB
+`AttogradDB` is a simple and efficient vector store designed for document embedding and retrieval tasks. 
+
+*Version 0.2.1*
+
+## Installation
+
+Install pytorch from the official website: https://pytorch.org/get-started/locally/
+
+Pip package will be available in the upcoming release. As of now, you can install the package by cloning the repository.
+
+## Usage
+
+Refer to the examples folder for usage examples.
+
+## LICENCE
+
+This project is licensed under the MIT License.

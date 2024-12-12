@@ -1,7 +1,7 @@
 # AttogradDB
 `AttogradDB` is a simple and efficient vector store designed for document embedding and retrieval tasks. 
 
-*Version 0.2.1*
+*Version 0.3*
 
 ## Installation
 

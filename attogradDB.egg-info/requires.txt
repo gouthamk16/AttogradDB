@@ -1,0 +1,9 @@
+numpy
+scipy
+tiktoken
+transformers
+accelerate
+torch
+huggingface_hub
+PyPDF2
+graphing

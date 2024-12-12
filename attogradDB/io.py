@@ -1,7 +1,7 @@
 ## Implementation of a class that orders the given text into a collection of docs
 
 class TextSplitter:
-    def __init__(self, chunk_size: int = 100, chunk_overlap: int = 50):
+    def __init__(self, chunk_size: int = 200, chunk_overlap: int = 20):
         """
         :chunk_size: The maximum number of characters in each chunk.
         :chunk_overlap: The number of characters overlapping between chunks.

@@ -1,4 +1,6 @@
 import numpy as np
+import json
+import os
 from attogradDB.embedding import BertEmbedding
 from attogradDB.indexing import HNSW
 
@@ -64,9 +66,14 @@ class VectorStore:
             self.add_text(f"doc_{idx}", doc)
             idx += 1
     
-    def get_vector(self, vector_id):
+    def get_vector(self, vector_id, decode_results=False):
         """Retrieve vector by its ID."""
-        return self.vector.get(vector_id)
+        if decode_results:
+            # Return the n similar results decoded back to text
+            decoded_text = self.embedding_model.reverse_embedding(self.vector.get(vector_id))
+            return decoded_text
+        else:
+            return self.vector.get(vector_id)
     
     def update_index(self, vector_id, vector):
         """Update the similarity index with new vectors."""
@@ -119,3 +126,75 @@ class VectorStore:
             return decoded_results
         
         return results[:top_n]
+    
+    
+class keyValueStore:
+    def __init__(self, save_path = "data.json"):
+        '''
+        A json document intialized to store the key value pairs.
+        Create an empty list if the file doesnt exist
+        '''
+        self.save_path = save_path
+        # Ensure that the file exists
+        if not os.path.exists(self.save_path):
+            with open(self.save_path, "w") as outfile:
+                json.dump([], outfile)
+
+    def add(self, data):
+        '''
+        Adds a new dictionary to the JSON file
+        '''
+        with open(self.save_path, "r") as infile:
+            try:
+                existing_data = json.load(infile)
+            except json.JSONDecodeError:
+                existing_data = []
+        
+        if isinstance(data, list):
+            for instance in data:
+                existing_data.append(instance)
+        else:
+            existing_data.append(data)
+
+        with open(self.save_path, "w") as outfile:
+            json.dump(existing_data, outfile, indent=4)
+
+    
+    def __getitem__(self, key):
+        '''
+        Retrieves an item by key - searches for the dictionary containing a key
+        '''
+        with open(self.save_path, "r") as infile:
+            existing_data = json.load(infile)
+
+        return existing_data[key]
+
+        # for item in existing_data:
+        #     if key in item:
+        #         return item[key]
+        
+        # raise KeyError(f"Key '{key}' not found in store")
+    
+    def search(self, key, value):
+        with open(self.save_path, "r") as infile:
+            existing_data = json.load(infile)
+        result = []
+        for data in existing_data:
+            if value == data[key]:
+                result.append(data)
+        return result
+    
+    def toVector(self, indexing="brute-force", embedding_model="bert"):
+        '''
+        Converts the key value store to Vector DB docs
+        '''
+        with open(self.save_path, "r") as infile:
+            json_data = json.load(infile)
+        
+        # Convert the json docs into docs of strings
+        docs = [json.dumps(entry, separators=(',', ':')) for entry in json_data]
+
+        vectorStore = VectorStore(indexing=indexing, embedding_model=embedding_model)
+        vectorStore.add_documents(docs)
+
+        return vectorStore
