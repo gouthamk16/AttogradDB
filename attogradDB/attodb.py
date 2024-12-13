@@ -8,7 +8,7 @@ from attogradDB.indexing import HNSW
 ## Log perfomance for both brute force and hnsw indexing
 
 class VectorStore:
-    def __init__(self, indexing="hnsw", embedding_model="bert"):
+    def __init__(self, indexing="hnsw", embedding_model="bert", save_index=False):
         self.vector = {}  
         self.index = {}
         if embedding_model == "bert":   
@@ -116,7 +116,7 @@ class VectorStore:
                 results.append((existing_id, cosine_similarity))
         
             results.sort(key=lambda x: x[1], reverse=True)
-
+                
         if decode_results:
             # Return the n similar results decoded back to text
             decoded_results = []
@@ -168,12 +168,6 @@ class keyValueStore:
             existing_data = json.load(infile)
 
         return existing_data[key]
-
-        # for item in existing_data:
-        #     if key in item:
-        #         return item[key]
-        
-        # raise KeyError(f"Key '{key}' not found in store")
     
     def search(self, key, value):
         with open(self.save_path, "r") as infile:

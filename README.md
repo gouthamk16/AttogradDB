@@ -2,6 +2,7 @@
 
 A lightweight document based vector store for fast and efficient semantic retrieval. Lightning fast vector-based search for NoSQL and plaintext documents, embedded using BERT.
 
+Version 0.3.1
 
 ## Features
 
@@ -11,8 +12,6 @@ A lightweight document based vector store for fast and efficient semantic retrie
 - Customizable Vector Store
 - HNSW Indexing
 - Semantic search for NoSQL documents
-
-
 
 
 ## Installation

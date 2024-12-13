@@ -26,8 +26,10 @@ class TestVectorStore_HNSW(unittest.TestCase):
              self.vectorStore.add_text("vec1", self.input_vector1)
              self.vectorStore.add_text("vec2", self.input_vector2)
              self.vectorStore.add_text("vec3", self.input_vector3)
-             results = self.vectorStore.get_similar(self.test_query1, top_n=1)
-             self.assertEqual(results[0][0], "vec1")
+             results1 = self.vectorStore.get_similar(self.test_query1, top_n=1)
+             results2 = self.vectorStore.get_similar(self.text_query2, top_n=1)
+             self.assertEqual(results1[0][0], "vec1")
+             self.assertEqual(results2[0][0], "vec2")
 
 if __name__ == "__main__":
     unittest.main()

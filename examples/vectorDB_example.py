@@ -12,26 +12,26 @@ from attogradDB.io import TextSplitter
 ## Document store implementation (vectorstore on top of textsplitter)
 ## Brute Force Indexing
 
-print("\nDocument store and retrieval using brute-force index\n")
+# print("\nDocument store and retrieval using brute-force index\n")
 
-pdf_path = "../sample_data/dpo_paper.pdf"
-text = read_pdf(pdf_path)
-splitter = TextSplitter(chunk_size=300, chunk_overlap=20)
-splitter.split_text(text)
-docs = splitter.get_docs(extract=True)
+# pdf_path = "../sample_data/dpo_paper.pdf"
+# text = read_pdf(pdf_path)
+# splitter = TextSplitter(chunk_size=300, chunk_overlap=20)
+# splitter.split_text(text)
+# docs = splitter.get_docs(extract=True)
 
-store = VectorStore(indexing="brute-force", embedding_model="bert") 
-add_start = time.perf_counter()
-store.add_documents(docs)
-add_end = time.perf_counter()
-print(f"Time taken to add documents: {add_end - add_start} seconds")
+# store = VectorStore(indexing="brute-force", embedding_model="bert") 
+# add_start = time.perf_counter()
+# store.add_documents(docs)
+# add_end = time.perf_counter()
+# print(f"Time taken to add documents: {add_end - add_start} seconds")
 
-query = "reward model"
-search_start = time.perf_counter()
-results = store.get_similar(query, top_n=2)
-search_end = time.perf_counter()
-print(f"Time taken to search: {search_end - search_start} seconds")
-print(results)
+# query = "reward model"
+# search_start = time.perf_counter()
+# results = store.get_similar(query, top_n=2)
+# search_end = time.perf_counter()
+# print(f"Time taken to search: {search_end - search_start} seconds")
+# print(results)
 
 
 # ## Plaintext Vector store implementation
@@ -73,24 +73,24 @@ print(results)
 
 ## Document store and retrieval using HNSW index
 
-# print("\nDocument store and retrieval using HNSW index\n")
+print("\nDocument store and retrieval using HNSW index\n")
 
-# pdf_path = "../sample_data/dpo_paper.pdf"
-# text = read_pdf(pdf_path)
-# splitter = TextSplitter(chunk_size=350, chunk_overlap=20)
-# splitter.split_text(text)
-# docs = splitter.get_docs(extract=True)
+pdf_path = "../sample_data/dpo_paper.pdf"
+text = read_pdf(pdf_path)
+splitter = TextSplitter(chunk_size=350, chunk_overlap=20)
+splitter.split_text(text)
+docs = splitter.get_docs(extract=True)
 
-# store2 = VectorStore(indexing="hnsw")
-# addhnsw_start = time.perf_counter()
-# store2.add_documents(docs)
-# addhnsw_end = time.perf_counter()
-# print(f"Time taken to add documents: {addhnsw_end - addhnsw_start} seconds")
+store2 = VectorStore(indexing="hnsw")
+addhnsw_start = time.perf_counter()
+store2.add_documents(docs)
+addhnsw_end = time.perf_counter()
+print(f"Time taken to add documents: {addhnsw_end - addhnsw_start} seconds")
 
-# query = "reward model"
-# searchhnsw_start = time.perf_counter()
-# results = store2.get_similar(query, top_n=4)
-# searchhnsw_end = time.perf_counter()
-# print(f"Time taken to search: {searchhnsw_end - searchhnsw_start} seconds")
-# for result in results:
-#     print(result)
+query = "reward model"
+searchhnsw_start = time.perf_counter()
+results = store2.get_similar(query, top_n=4)
+searchhnsw_end = time.perf_counter()
+print(f"Time taken to search: {searchhnsw_end - searchhnsw_start} seconds")
+for result in results:
+    print(result)
