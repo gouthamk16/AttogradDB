@@ -4,6 +4,8 @@ A lightweight document based vector store for fast and efficient semantic retrie
 
 Version 0.3.1
 
+Goutham Yay
+
 ## Features
 
 - NoSQL Key Value Store
