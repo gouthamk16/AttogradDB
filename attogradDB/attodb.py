@@ -129,16 +129,17 @@ class VectorStore:
     
     
 class keyValueStore:
-    def __init__(self, save_path = "data.json"):
+    def __init__(self, json_path = "data.json"):
         '''
         A json document intialized to store the key value pairs.
         Create an empty list if the file doesnt exist
         '''
-        self.save_path = save_path
+        self.save_path = json_path
         # Ensure that the file exists
         if not os.path.exists(self.save_path):
             with open(self.save_path, "w") as outfile:
                 json.dump([], outfile)
+    
 
     def add(self, data):
         '''

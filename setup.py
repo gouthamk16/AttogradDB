@@ -16,10 +16,10 @@ setup(
         "tiktoken",
         "transformers",
         "accelerate",
-        "torch",
         "huggingface_hub",  # Example dependencies
         "PyPDF2",
-        "graphing"  
+        "graphing",
+        "hnswlib"  
     ],
     classifiers=[
         "Programming Language :: Python :: 3.12.3",

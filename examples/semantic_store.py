@@ -1,8 +1,10 @@
 from attogradDB.attodb import keyValueStore
 
+# Initialize the store with the path to the JSON file
+# Creates a new json file if it doesn't exist
+store = keyValueStore(json_path="data.json")
 
-store = keyValueStore(save_path="data.json")
-
+# Loading a sample data into the store
 sample_data = [
     {
         "id": 101,
