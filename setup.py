@@ -21,8 +21,14 @@ setup(
         "graphing",
         "hnswlib"  
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "twine",
+        ]
+    },
     classifiers=[
-        "Programming Language :: Python :: 3.12.3",
+        "Programming Language :: Python :: 3.6",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
