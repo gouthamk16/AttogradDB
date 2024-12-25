@@ -181,7 +181,7 @@ class keyValueStore:
     
     def toVector(self, indexing="brute-force", embedding_model="bert"):
         '''
-        Converts the key value store to Vector DB docs
+        Converts the key value store to Vector DB documents
         '''
         with open(self.save_path, "r") as infile:
             json_data = json.load(infile)
