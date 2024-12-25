@@ -2,4 +2,4 @@ __pycache__/
 data/
 attogradDB.egg-info/
 .venv/
-.tests/
+tests/
