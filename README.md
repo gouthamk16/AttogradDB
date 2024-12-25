@@ -16,9 +16,13 @@ Version 0.3.1
 
 ## Installation
 
-pip package will be available in the upcoming release.
+### Method 1: Install the PyPI package
 
-Clone source
+```bash
+pip install attogradDB==0.3.1
+```
+
+### Method 2: Clone and build from source
 
 ```bash
 git clone https://github.com/gouthamk16/AttogradDB.git
