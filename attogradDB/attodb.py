@@ -11,6 +11,7 @@ class VectorStore:
     def __init__(self, indexing="hnsw", embedding_model="bert", save_index=False):
         self.vector = {}  
         self.index = {}
+        self.idx = 0
         if embedding_model == "bert":   
             self.embedding_model = BertEmbedding()
         if indexing == "hnsw":
@@ -61,10 +62,9 @@ class VectorStore:
         Args:
             docs (List[str]): List of documents to be added to the store.
         """
-        idx = 0
         for doc in docs:
-            self.add_text(f"doc_{idx}", doc)
-            idx += 1
+            self.add_text(f"doc_{self.idx}", doc)
+            self.idx += 1
     
     def get_vector(self, vector_id, decode_results=False):
         """Retrieve vector by its ID."""

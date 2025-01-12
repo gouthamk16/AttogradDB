@@ -4,8 +4,6 @@ from attogradDB.attodb import keyValueStore
 # Creates a new json file if it doesn't exist
 store = keyValueStore(json_path="data.json")
 
-## Implementing a method to add multiple json docs into the key value store
-
 # Loading a sample data into the store - ignore if data is loaded directly from a json file
 sample_data = [
     {
