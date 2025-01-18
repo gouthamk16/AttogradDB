@@ -3,6 +3,7 @@ import json
 import os
 from attogradDB.embedding import BertEmbedding
 from attogradDB.indexing import HNSW
+import uuid
 
 ## Add support for custom tokenization and tiktoken
 ## Log perfomance for both brute force and hnsw indexing
@@ -129,67 +130,134 @@ class VectorStore:
     
     
 class keyValueStore:
-    def __init__(self, json_path = "data.json"):
+    def __init__(self, json_path="data.json"):
         '''
-        A json document intialized to store the key value pairs.
-        Create an empty list if the file doesnt exist
+        Initialize key-value store with master and default collections.
+        Creates directory structure if it doesn't exist.
         '''
-        self.save_path = json_path
-        # Ensure that the file exists
-        if not os.path.exists(self.save_path):
-            with open(self.save_path, "w") as outfile:
-                json.dump([], outfile)
-    
+        self.base_path = json_path.rsplit('.', 1)[0]
+        os.makedirs(self.base_path, exist_ok=True)
+        
+        # Initialize master collection structure
+        self.master_collections = {}
+        self.current_master = "default"
+        self.current_collection = "default"
+        
+        # Create default master collection and collection
+        master_path = os.path.join(self.base_path, "default")
+        os.makedirs(master_path, exist_ok=True)
+        collection_path = os.path.join(master_path, "default.json")
+        
+        if not os.path.exists(collection_path):
+            with open(collection_path, "w") as f:
+                json.dump({"documents": []}, f)
 
-    def add(self, data):
+    def create_master_collection(self, name):
+        '''Create a new master collection'''
+        path = os.path.join(self.base_path, name)
+        os.makedirs(path, exist_ok=True)
+        self.master_collections[name] = {}
+        
+    def create_collection(self, name, master_collection="default"):
+        '''Create a new collection within a master collection'''
+        master_path = os.path.join(self.base_path, master_collection)
+        collection_path = os.path.join(master_path, f"{name}.json")
+        
+        if not os.path.exists(collection_path):
+            with open(collection_path, "w") as f:
+                json.dump({"documents": []}, f)
+
+    def use_collection(self, collection, master_collection="default"):
+        '''Switch to a specific collection'''
+        self.current_master = master_collection
+        self.current_collection = collection
+
+    def add(self, data, doc_id=None):
         '''
-        Adds a new dictionary to the JSON file
+        Add document(s) to current collection
         '''
-        with open(self.save_path, "r") as infile:
+        collection_path = os.path.join(self.base_path, self.current_master, 
+                                     f"{self.current_collection}.json")
+        
+        with open(collection_path, "r") as f:
             try:
-                existing_data = json.load(infile)
+                collection_data = json.load(f)
             except json.JSONDecodeError:
-                existing_data = []
-        
+                collection_data = {"documents": []}
+
         if isinstance(data, list):
-            for instance in data:
-                existing_data.append(instance)
+            for idx, doc in enumerate(data):
+                doc_with_id = doc.copy()
+                if doc_id is None:
+                    doc_with_id["_id"] = str(uuid.uuid4())
+                else:
+                    doc_with_id["_id"] = f"{doc_id}_{idx}"
+                collection_data["documents"].append(doc_with_id)
         else:
-            existing_data.append(data)
+            doc_with_id = data.copy()
+            doc_with_id["_id"] = doc_id or str(uuid.uuid4())
+            collection_data["documents"].append(doc_with_id)
 
-        with open(self.save_path, "w") as outfile:
-            json.dump(existing_data, outfile, indent=4)
+        with open(collection_path, "w") as f:
+            json.dump(collection_data, f, indent=4)
 
-    
-    def __getitem__(self, key):
+    def add_json(self, json_file):
         '''
-        Retrieves an item by key - searches for the dictionary containing a key
-        '''
-        with open(self.save_path, "r") as infile:
-            existing_data = json.load(infile)
-
-        return existing_data[key]
-    
-    def search(self, key, value):
-        with open(self.save_path, "r") as infile:
-            existing_data = json.load(infile)
-        result = []
-        for data in existing_data:
-            if value == data[key]:
-                result.append(data)
-        return result
-    
-    def toVector(self, indexing="brute-force", embedding_model="bert"):
-        '''
-        Converts the key value store to Vector DB documents
-        '''
-        with open(self.save_path, "r") as infile:
-            json_data = json.load(infile)
+        Add documents from a JSON file to current collection
         
-        # Convert the json docs into docs of strings
-        docs = [json.dumps(entry, separators=(',', ':')) for entry in json_data]
+        Args:
+            json_file (str): Path to JSON file containing documents
+        '''
+        try:
+            with open(json_file, 'r') as f:
+                data = json.load(f)
+                
+            # Handle both single document and list of documents
+            if isinstance(data, dict):
+                self.add(data)
+            elif isinstance(data, list):
+                self.add(data)
+            else:
+                raise ValueError("JSON file must contain either a single document or list of documents")
+                
+        except FileNotFoundError:
+            raise FileNotFoundError(f"JSON file not found: {json_file}")
+        except json.JSONDecodeError:
+            raise ValueError(f"Invalid JSON format in file: {json_file}")
 
+    def __getitem__(self, key):
+        '''Retrieve document by index'''
+        collection_path = os.path.join(self.base_path, self.current_master,
+                                     f"{self.current_collection}.json")
+        with open(collection_path, "r") as f:
+            collection_data = json.load(f)
+        return collection_data["documents"][key]
+
+    def search(self, key, value):
+        '''Search documents by key-value pair'''
+        collection_path = os.path.join(self.base_path, self.current_master,
+                                     f"{self.current_collection}.json")
+        with open(collection_path, "r") as f:
+            collection_data = json.load(f)
+        
+        return [doc for doc in collection_data["documents"] if doc.get(key) == value]
+
+    def toVector(self, indexing="brute-force", embedding_model="bert", collection=None, master_collection=None):
+        '''
+        Convert collection documents to vector store
+        '''
+        if collection:
+            self.use_collection(collection, master_collection or self.current_master)
+            
+        collection_path = os.path.join(self.base_path, self.current_master,
+                                     f"{self.current_collection}.json")
+        
+        with open(collection_path, "r") as f:
+            collection_data = json.load(f)
+
+        docs = [json.dumps(doc, separators=(',', ':')) for doc in collection_data["documents"]]
+        
         vectorStore = VectorStore(indexing=indexing, embedding_model=embedding_model)
         vectorStore.add_documents(docs)
-
+        
         return vectorStore

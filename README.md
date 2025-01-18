@@ -2,7 +2,7 @@
 
 A lightweight document based vector store for fast and efficient semantic retrieval. Lightning fast vector-based search for NoSQL and plaintext documents, embedded using BERT. 
 
-Version 0.3.1
+Version 0.4
 
 ## Features
 
@@ -47,21 +47,31 @@ Examples can be found at `AttogradDB/examples`
 
 ### VectorStore
 
--   `add_text(vector_id, input_data)` Add a single vectorized text to the database.
+-   `__init__(indexing="hnsw", embedding_model="bert", save_index=False)` Initialize vector store with specified indexing and embedding model.
 
--   `add_documents(docs)` Bulk-add a list of documents.
+-   `add_text(vector_id, input_data)` Add a single text document to the vector store after embedding.
 
--   `get_vector(vector_id, decode_results=False)` Retrieve a stored vector by its ID.
+-   `add_documents(docs)` Bulk-add a list of JSON documents to the vector store after converting to text and embedding.
 
--   `get_similar(query_text, top_n=5, decode_results=True)` Find top N similar vectors for a given query.
+-   `get_similar(query_text, top_n=5, decode_results=True)` Find top N semantically similar documents for a given query text. Returns list of tuples containing (vector_id, similarity_score, document_text) if decode_results=True, otherwise returns (vector_id, similarity_score).
+
+-   `similarity(vector_a, vector_b, method="cosine")` Calculate cosine similarity between two vectors.
 
 ### keyValueStore
 
--   `add(data)` Add a new dictionary to the JSON file.
+-   `create_master_collection(name)` Create a new master collection to group related collections.
 
--   `search(key, value)` Search for entries by a specific key-value pair.
+-   `create_collection(name, master_collection="default")` Create a new collection within a master collection.
 
--   `toVector(indexing, embedding_model)` Convert the key-value store data into a document stored in the vector database.
+-   `use_collection(collection, master_collection="default")` Switch to a specific collection for operations.
+
+-   `add(data, doc_id=None)` Add document(s) to current collection with optional custom IDs.
+
+-   `add_json(json_file)` Add documents from a JSON file to current collection.
+
+-   `search(key, value)` Search documents by key-value pair in current collection.
+
+-   `toVector(indexing="brute-force", embedding_model="bert", collection=None, master_collection=None)` Convert collection documents to vector store with specified indexing and embedding model.
 
 ### Embedding
 
