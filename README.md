@@ -4,6 +4,8 @@ A lightweight document based vector store for fast and efficient semantic retrie
 
 Version 0.4
 
+[![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
+
 ## Features
 
 - NoSQL Key Value Store
