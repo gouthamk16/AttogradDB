@@ -21,7 +21,7 @@ Version 0.4
 ### Method 1: Install the PyPI package
 
 ```bash
-pip install attogradDB==0.3.1
+pip3 install attogradDB==0.3.1
 ```
 
 ### Method 2: Clone and build from source
@@ -33,12 +33,12 @@ Setup and activate python virtual environment
 
 ```bash
 cd AttogradDB
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 Build setup dependencies
 ```bash
-pip install -e .
+pip3 install -e .
 ```
 
 ## Usage
