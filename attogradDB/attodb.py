@@ -9,7 +9,7 @@ import uuid
 ## Log perfomance for both brute force and hnsw indexing
 
 class VectorStore:
-    def __init__(self, indexing="hnsw", embedding_model="bert", save_index=False):
+    def __init__(self, indexing="hnsw", embedding_model="bert", save_vector_index=False, save_path = None):
         self.vector = {}  
         self.index = {}
         self.idx = 0
@@ -20,6 +20,9 @@ class VectorStore:
             self.index = HNSW()
         elif indexing == "brute-force":
             self.indexing = "brute-force"
+        
+        self.save_vector_index = save_vector_index
+        self.save_path = save_path
 
     def get_key_by_value(self, value):
         for key, val in self.vector.items():
@@ -54,6 +57,21 @@ class VectorStore:
         else:
             self.vector[vector_id] = tokenized_vector
             self.update_index(vector_id, tokenized_vector)
+
+        if self.save_vector_index:
+            self.save_index()
+    
+    def save_index(self):
+        '''
+        Save the vector index to a file.
+        If save_path is not specified, save the index to a file named "stored_indices.json" in the current working directory.
+        '''
+        if self.save_path:
+            with open(self.save_path, "w") as f:
+                json.dump(self.vector, f)
+        else:
+            with open("stored_indices.json", "w") as f:
+                json.dump(self.vector, f)
 
     def add_documents(self, docs):
         """
