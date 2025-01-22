@@ -47,7 +47,7 @@ Examples can be found at `AttogradDB/examples`
 
 ### VectorStore
 
--   `__init__(indexing="hnsw", embedding_model="bert", save_index=False)` Initialize vector store with specified indexing and embedding model.
+-   `__init__(indexing="hnsw", embedding_model="bert", save_index=False, save_path=None)` Initialize vector store with specified indexing and embedding model.
 
 -   `add_text(vector_id, input_data)` Add a single text document to the vector store after embedding.
 
@@ -56,6 +56,8 @@ Examples can be found at `AttogradDB/examples`
 -   `get_similar(query_text, top_n=5, decode_results=True)` Find top N semantically similar documents for a given query text. Returns list of tuples containing (vector_id, similarity_score, document_text) if decode_results=True, otherwise returns (vector_id, similarity_score).
 
 -   `similarity(vector_a, vector_b, method="cosine")` Calculate cosine similarity between two vectors.
+
+-   `save_index()` Save the vector index to a json file.
 
 ### keyValueStore
 
