@@ -11,8 +11,8 @@ import uuid
 class VectorStore:
     def __init__(self, indexing="hnsw", embedding_model="bert", save_path = None, load_path = None):
         self.vector = {}  
-        if self.load_path:
-            self.load_index(self.load_path)
+        if load_path:
+            self.load_index(load_path)
         self.index = {}
         self.idx = 0
         if embedding_model == "bert":   

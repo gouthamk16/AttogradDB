@@ -59,7 +59,9 @@ Examples can be found at `AttogradDB/examples`
 
 -   `similarity(vector_a, vector_b, method="cosine")` Calculate cosine similarity between two vectors.
 
--   `save_index()` Save the vector index to a json file.
+-   `save_path()` Save the vector index to a json file. `None` by default.
+
+-   `load_path()` Loads a json file containing indexes into the VectorDB. `None` by default.
 
 ### keyValueStore
 
