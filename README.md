@@ -2,7 +2,7 @@
 
 A lightweight document based vector store for fast and efficient semantic retrieval. Lightning fast vector-based search for NoSQL and plaintext documents, embedded using BERT. 
 
-Version 0.4
+Version 0.4.2 (pip package for 0.4.2 not available yet)
 
 ## Features
 
@@ -19,7 +19,7 @@ Version 0.4
 ### Method 1: Install the PyPI package
 
 ```bash
-pip install attogradDB==0.3.1
+pip install attogradDB==0.4
 ```
 
 ### Method 2: Clone and build from source
@@ -87,7 +87,7 @@ Examples can be found at `AttogradDB/examples`
 
 #### `HNSW`
 
--   Implements Hierarchical Navigable Small World indexing.
+-   Implements Hierarchical Navigable Small Words indexing.
 
 -   Provides efficient approximate nearest-neighbor search for large data.
 
@@ -95,15 +95,17 @@ Examples can be found at `AttogradDB/examples`
 
 -   Implements brute-force search of clustered documents.
 
--   Lightspeed search for small to medium sized documents and NoSQL databases.
+-   Lightspeed search for small to medium sized text and NoSQL documents.
 
 ## Roadmap
 
+- Add a method for performance logging.
+- LLM based chunking.
+- Tests for lading and saving indexes locally.
 - Add support for GPU-accelerated embedding generation and vector search using cuda.
 - C/Rust backend for similarity search and indexing.
-- Performance logging for HNSW indexing. 
-- Publishing the library on PyPI.
 - Adding support for more embedding models and indexing methods.
+- Adding support for more document types (currently we have pdf, json and txt. Need to add support for docx and images).
 
 ## Contributing
 
