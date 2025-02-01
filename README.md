@@ -4,6 +4,8 @@ A lightweight document based vector store for fast and efficient semantic retrie
 
 Version 0.4.2 (pip package for 0.4.2 not available yet)
 
+[![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
+
 ## Features
 
 - NoSQL Key Value Store
@@ -19,7 +21,7 @@ Version 0.4.2 (pip package for 0.4.2 not available yet)
 ### Method 1: Install the PyPI package
 
 ```bash
-pip install attogradDB==0.4
+pip3 install attogradDB==0.3.1
 ```
 
 ### Method 2: Clone and build from source
@@ -31,12 +33,12 @@ Setup and activate python virtual environment
 
 ```bash
 cd AttogradDB
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 Build setup dependencies
 ```bash
-pip install -e .
+pip3 install -e .
 ```
 
 ## Usage
