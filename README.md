@@ -116,8 +116,8 @@ Search scans every candidate vector rather than using an ANN index. Measured at 
 of 768 dimensions: 8 ms unfiltered, 3 ms scoped to 2% of the store. An HNSW index is faster
 unfiltered but roughly 275x slower once a filter is applied, because filtering disconnects its
 graph while it only shortens an exhaustive scan. Since almost every query here is scoped, and
-8 ms is invisible next to an LLM call, the index is not worth its cost. See `to-do.txt` for the
-numbers and for the point at which this stops being true.
+8 ms is invisible next to an LLM call, the index is not worth its cost. Past roughly a million
+vectors a scan reaches ~230 ms and that trade changes; `CLAUDE.md` holds the full numbers.
 
 ## Roadmap
 
