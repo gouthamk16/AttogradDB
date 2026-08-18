@@ -3,10 +3,15 @@ import time
 
 import numpy as np
 
-from attogradDB.embedding import BertEmbedding
+from attogradDB.embedding import NATIVE_DIM, QwenEmbedding
 
-EMBEDDING_MODELS = ("bert",)
+EMBEDDING_MODELS = ("qwen3",)
 SCOPE_FIELDS = ("project", "session", "kind")
+
+# Vectors are stored at NATIVE_DIM and truncated to this for searching. Qwen3 is trained
+# with Matryoshka representation learning, so early dimensions carry the most signal;
+# top-1 hits survived truncation to 64 in local testing, and 256 leaves headroom.
+DEFAULT_DIM = 256
 
 # Below this share of the store, copying the matching rows beats scanning everything;
 # above it the copy dominates. Measured at 100k x 768d -- see to-do.txt item 14.
@@ -23,6 +28,7 @@ CREATE TABLE IF NOT EXISTS chunks (
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_chunks_scope ON chunks(project, session, kind);
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 """
 
 
@@ -35,15 +41,37 @@ class VectorStore:
     exactly the filtered queries this store exists to serve.
     """
 
-    def __init__(self, path: str | None = None, embedding_model: str = "bert"):
+    def __init__(
+        self,
+        path: str | None = None,
+        embedding_model: str = "qwen3",
+        dim: int = DEFAULT_DIM,
+    ):
         if embedding_model not in EMBEDDING_MODELS:
             raise ValueError(
                 f"Unknown embedding_model {embedding_model!r}, expected one of {EMBEDDING_MODELS}"
             )
-        self.embedding_model = BertEmbedding()
+        if not 0 < dim <= NATIVE_DIM:
+            raise ValueError(f"dim must be in (0, {NATIVE_DIM}], got {dim}")
+
+        self.dim = dim
+        self.embedding_model = QwenEmbedding()
         self.db = sqlite3.connect(path or ":memory:")
         self.db.executescript(SCHEMA)
+        self._check_model(embedding_model)
         self._load()
+
+    def _check_model(self, embedding_model: str) -> None:
+        """Refuse to mix vectors from different models in one store."""
+        stored = dict(self.db.execute("SELECT key, value FROM meta"))
+        if not stored:
+            with self.db:
+                self.db.execute("INSERT INTO meta VALUES ('model', ?)", (embedding_model,))
+        elif stored.get("model") != embedding_model:
+            raise ValueError(
+                f"store was built with embedding_model={stored.get('model')!r}, "
+                f"cannot reopen as {embedding_model!r} -- vectors are not comparable"
+            )
 
     def _load(self) -> None:
         rows = self.db.execute(
@@ -55,17 +83,27 @@ class VectorStore:
             self._scopes = {field: np.empty(0, dtype="U1") for field in SCOPE_FIELDS}
             return
         self._ids = np.fromiter((row[0] for row in rows), dtype=np.int64, count=len(rows))
-        self._vectors = np.stack([np.frombuffer(row[1], dtype=np.float32) for row in rows])
+        stored = np.stack([np.frombuffer(row[1], dtype=np.float32) for row in rows])
+        self._vectors = self._truncate(stored)
         self._scopes = {
             field: np.array([row[2 + i] or "" for row in rows], dtype="U")
             for i, field in enumerate(SCOPE_FIELDS)
         }
 
-    def _embed(self, text: str) -> np.ndarray:
-        vector = np.asarray(self.embedding_model.embed(text), dtype=np.float32)
-        norm = np.linalg.norm(vector)
-        # Normalising on the way in makes every later comparison a plain dot product.
-        return vector / norm if norm else vector
+    def _truncate(self, vectors: np.ndarray) -> np.ndarray:
+        """Cut to self.dim and renormalise -- slicing a unit vector does not leave one."""
+        cut = vectors[..., : self.dim]
+        norms = np.linalg.norm(cut, axis=-1, keepdims=True)
+        return np.divide(cut, norms, out=np.zeros_like(cut), where=norms != 0)
+
+    def _embed_document(self, text: str) -> np.ndarray:
+        """Full-dimension document vector, for storage."""
+        return np.asarray(self.embedding_model.embed_document(text), dtype=np.float32)
+
+    def _embed_query(self, text: str) -> np.ndarray:
+        """Truncated, normalised query vector, ready to dot against the index."""
+        raw = np.asarray(self.embedding_model.embed_query(text), dtype=np.float32)
+        return self._truncate(raw)
 
     @staticmethod
     def _scope_sql(project, session, kind) -> tuple[list[str], list]:
@@ -114,7 +152,7 @@ class VectorStore:
         if not texts:
             return []
 
-        vectors = [self._embed(text) for text in texts]
+        vectors = [self._embed_document(text) for text in texts]
         created_at = time.time()
         ids = []
         with self.db:
@@ -126,7 +164,7 @@ class VectorStore:
                 )
                 ids.append(cursor.lastrowid)
 
-        stacked = np.stack(vectors)
+        stacked = self._truncate(np.stack(vectors))
         self._ids = np.concatenate([self._ids, np.array(ids, dtype=np.int64)])
         self._vectors = stacked if self._vectors.size == 0 else np.vstack([self._vectors, stacked])
         for field, value in zip(SCOPE_FIELDS, (project, session, kind)):
@@ -150,7 +188,7 @@ class VectorStore:
         if rows is not None and len(rows) == 0:
             return []
 
-        query_vector = self._embed(query)
+        query_vector = self._embed_query(query)
 
         if rows is None:
             scores = self._vectors @ query_vector

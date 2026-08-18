@@ -1,6 +1,10 @@
+import sqlite3
+
+import numpy as np
 import pytest
 
 from attogradDB.attodb import VectorStore
+from attogradDB.embedding import NATIVE_DIM
 
 DOCS = ["the quick brown fox", "the cat sat on the mat", "the rabbit hole is deep"]
 
@@ -165,3 +169,54 @@ def test_broad_and_narrow_filters_agree(store):
 
     assert store.search("needle in here", top_n=1, project="narrow")[0][2] == "needle in here"
     assert len(store.search("doc 3", top_n=99, project="wide")) == 30
+
+
+# --- dimensions and model identity ---
+
+
+@pytest.mark.parametrize("dim", [0, -1, 99999])
+def test_invalid_dim_rejected(stub_embedding, dim):
+    with pytest.raises(ValueError):
+        VectorStore(dim=dim)
+
+
+def test_index_is_truncated_but_storage_is_not(stub_embedding, tmp_path):
+    """Full vectors go to disk so dim can change later without re-embedding."""
+    path = str(tmp_path / "m.db")
+    store = VectorStore(path=path, dim=128)
+    store.add(DOCS)
+
+    assert store._vectors.shape[1] == 128
+    stored = store.db.execute("SELECT vector FROM chunks LIMIT 1").fetchone()[0]
+    assert len(stored) // 4 == NATIVE_DIM
+    store.close()
+
+    # Same data, different search dimension, no re-embedding needed.
+    wider = VectorStore(path=path, dim=512)
+    assert wider._vectors.shape[1] == 512
+    assert wider.search(DOCS[1], top_n=1)[0][2] == DOCS[1]
+
+
+def test_truncated_index_vectors_stay_normalised(stub_embedding):
+    store = VectorStore(dim=64)
+    store.add(DOCS)
+    assert np.allclose(np.linalg.norm(store._vectors, axis=1), 1.0, atol=1e-6)
+
+
+def test_reopening_with_a_different_model_is_refused(stub_embedding, tmp_path):
+    path = str(tmp_path / "m.db")
+    VectorStore(path=path).close()
+    with sqlite3.connect(path) as db:
+        db.execute("UPDATE meta SET value = 'some-other-model' WHERE key = 'model'")
+    with pytest.raises(ValueError, match="not comparable"):
+        VectorStore(path=path)
+
+
+def test_queries_and_documents_take_different_paths(spy_embedding):
+    """The model is trained asymmetrically; the store must not embed both the same way."""
+    calls = spy_embedding
+    store = VectorStore()
+    store.add(["a document"])
+    store.search("a question")
+
+    assert [kind for kind, _ in calls] == ["document", "query"]
