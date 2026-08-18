@@ -39,3 +39,7 @@ testpaths = ["attogradDB/tests"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+# N is omitted: the package and keyValueStore keep their camelCase published names.
+select = ["E", "F", "I", "UP"]

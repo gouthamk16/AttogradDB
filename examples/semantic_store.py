@@ -1,4 +1,4 @@
-from attogradDB.attodb import keyValueStore
+from attogradDB.kvstore import keyValueStore
 
 # Initialize the store with the path to the JSON file
 # Creates a new json file if it doesn't exist with default master collection and collection
@@ -61,13 +61,17 @@ store.add_json("input_data/example_2.json")
 # Example retrieval for a specific key:
 print("First document in the store:", store[0])       # Accesses the first dictionary in the store
 
-print("Documents with id 104:", store.search("id", 104))  # Access the data instance with "id" value 104
+# Access the data instance with "id" value 104
+print("Documents with id 104:", store.search("id", 104))
 
 # Convert current collection to vector store
-semantic_store = store.toVector(indexing="hnsw", embedding_model="bert", collection="employees", master_collection="users")
+semantic_store = store.to_vector(
+    indexing="hnsw", embedding_model="bert",
+    collection="employees", master_collection="users",
+)
 
 # Or specify a different collection to convert
-# semantic_store = store.toVector(indexing="hnsw", embedding_model="bert", 
+# semantic_store = store.to_vector(indexing="hnsw", embedding_model="bert", 
 #                                collection="employees", master_collection="users")
 
 query = "Diana diana5678"

@@ -1,10 +1,8 @@
 import unittest
-import numpy as np
-import sys
-import os
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from attogradDB.attodb import VectorStore
+
 
 class TestVectorStore(unittest.TestCase):
 
