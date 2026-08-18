@@ -2,7 +2,7 @@
 
 A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 0.8.1
+Version 0.9.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
@@ -73,7 +73,7 @@ A runnable version is in `examples/quickstart.py`.
 
 ### VectorStore
 
--   `__init__(path=None, embedding_model="qwen3", dim=256)` Open a store. `path` is a SQLite file; `None` gives an in-memory store discarded on close. `dim` is the search dimension: full 1024-d vectors are always stored, and the in-memory index is truncated to `dim` (Matryoshka), so you can reopen at a different `dim` without re-embedding. Reopening with a different `embedding_model` is refused, since vectors from different models are not comparable.
+-   `__init__(path=None, embedding_model="qwen3", dim=256, profile="int8-cpu")` Open a store. `path` is a SQLite file; `None` gives an in-memory store discarded on close. `dim` is the search dimension: full 1024-d vectors are always stored, and the in-memory index is truncated to `dim` (Matryoshka), so you can reopen at a different `dim` without re-embedding. Reopening with a different `embedding_model` is refused, since vectors from different models are not comparable.
 
 -   `add(texts, project=None, session=None, kind=None) -> list[int]` Embed and store a string or list of strings. Ids are generated and returned.
 
@@ -108,9 +108,20 @@ A runnable version is in `examples/quickstart.py`.
 
 -   Embeds one text at a time. Batching gives no CPU throughput gain and padding perturbs the result, so it is deliberately not offered.
 
--   Runs on CPU everywhere by default, including macOS. Embedding is the only slow part of this library (~57ms for a 65-token chunk, ~480ms for 520 tokens), so if you ingest large documents, replacing `onnxruntime` with `onnxruntime-gpu` (CUDA) or `onnxruntime-directml` (Windows) is detected and used automatically — and falls back to CPU if the accelerator cannot start, so it is safe to ship the same code to machines without a GPU. `QwenEmbedding().provider` reports what is actually running.
+-   Two profiles, pairing a model build with an execution provider. The default `int8-cpu` runs identically everywhere including macOS. `fp16-gpu` requires `pip install onnxruntime-directml` or `onnxruntime-gpu`, and falls back to CPU if the accelerator cannot start.
 
--   CoreML on macOS is opt-in rather than automatic, since it can be slower than CPU on a model it has to partition heavily:
+-   **GPU is opt-in and only worth it for bulk ingestion.** Measured on an RTX 4060 over 96 PDF chunks:
+
+    | profile | ingest | query (median) |
+    |---|---|---|
+    | `int8-cpu` | 9.3 s | **34 ms** |
+    | `fp16-gpu` | **4.6 s** | 238 ms |
+
+    Ingest is 2x faster, but search is ~7x slower: DirectML recompiles per input shape and real queries vary in length. If you search more than you ingest — which agent memory does — stay on the default.
+
+-   The two builds produce different vectors (0.913 cosine), so the profile is recorded in the store and reopening under a different one raises rather than silently degrading results.
+
+-   CoreML on macOS is not used automatically, since it can be slower than CPU on a model it has to partition heavily. Opt in explicitly if you measure a win:
 
     ```python
     from attogradDB.embedding import QwenEmbedding
