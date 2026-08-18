@@ -1,11 +1,9 @@
 # Tests for the hnsw indexing as a docstore
 
 import unittest
-import numpy as np
-import sys
-import os
 
 from attogradDB.attodb import VectorStore
+
 
 class TestVectorStore_HNSW(unittest.TestCase):
     

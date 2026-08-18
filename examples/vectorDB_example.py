@@ -1,13 +1,9 @@
-import sys
-import os
 import time
 
 # Add the directory containing attodb to sys.path
-
 from attogradDB.attodb import VectorStore
-from attogradDB.utils import read_pdf
 from attogradDB.io import TextSplitter
-
+from attogradDB.utils import read_pdf
 
 # Document store implementation (vectorstore on top of textsplitter)
 # Brute Force Indexing

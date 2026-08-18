@@ -1,10 +1,10 @@
-from functools import lru_cache
+from functools import cache
 
 import tiktoken
 from transformers import AutoTokenizer
 
 
-@lru_cache(maxsize=None)
+@cache
 def _hf_tokenizer(name: str):
     """Cached because embed() tokenizes once per document and loading is not free."""
     return AutoTokenizer.from_pretrained(name)
