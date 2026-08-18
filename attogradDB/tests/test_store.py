@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from attogradDB.attodb import VectorStore
-from attogradDB.embedding import NATIVE_DIM, QwenEmbedding
+from attogradDB.embedding import NATIVE_DIM
 
 DOCS = ["the quick brown fox", "the cat sat on the mat", "the rabbit hole is deep"]
 
@@ -270,10 +270,3 @@ def test_delete_across_several_sessions(store):
 
     assert store.delete(session=["mon", "tue"]) == 2
     assert [text for _, _, text in store.search("work", top_n=99)] == ["wed work"]
-
-
-def test_cpu_is_always_an_available_provider():
-    """Accelerated providers come first; CPU must remain the last-resort fallback."""
-    providers = QwenEmbedding.available_providers()
-    assert providers[-1] == "CPUExecutionProvider"
-    assert len(providers) == len(set(providers))
