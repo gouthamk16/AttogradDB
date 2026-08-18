@@ -17,7 +17,8 @@ Scope = str | list[str] | None
 DEFAULT_DIM = 256
 
 # Below this share of the store, copying the matching rows beats scanning everything;
-# above it the copy dominates. Measured at 100k x 768d -- see to-do.txt item 14.
+# above it the copy dominates. Measured at 100k x 768d; see "Measured decisions"
+# in CLAUDE.md before changing this.
 SUBSET_SCAN_THRESHOLD = 0.10
 
 SCHEMA = """

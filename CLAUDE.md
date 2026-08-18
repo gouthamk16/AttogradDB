@@ -34,8 +34,8 @@ they are:
 
 - **There is no ANN index, deliberately.** Search scans every candidate. hnswlib was removed
   after benchmarking: it wins unfiltered by ~90x but loses filtered queries by ~275x, and
-  nearly every query here is scoped. `to-do.txt` items 12, 15 and 16 hold the numbers, the
-  measured `SUBSET_SCAN_THRESHOLD`, and the conditions under which this decision flips.
+  nearly every query here is scoped. See **Measured decisions** below for the numbers and
+  the conditions under which this flips.
 - **SQLite is the durable store; the numpy arrays are the index.** `_ids`, `_vectors` and
   `_scopes` are all rebuilt by `_load()`. Scope columns live in memory too — round-tripping
   90k ids through SQL cost 20ms against 0.2ms for a numpy comparison. `_texts()` is the one
@@ -50,7 +50,7 @@ they are:
 - **int8 is the fastest build on CPU, measured.** The 4-bit exports (q4, q4f16, bnb4)
   are ~2x slower because CPUs dequantise them per op, and they only agree 0.88-0.90 with
   int8 so they change results too. Don't "optimise" by switching quantisation without
-  re-running the comparison in to-do.txt item 13.
+  re-running the comparison under **Measured decisions**.
 - **Execution provider is auto-detected, not hardcoded.** `available_providers()` puts
   CUDA/DML/CoreML ahead of CPU, so installing onnxruntime-gpu is picked up with no code
   change. Never hardcode `["CPUExecutionProvider"]` again -- that silently ignored a GPU.
@@ -79,7 +79,7 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 - Turn tasks into verifiable goals before starting: "fix the loader" → write the failing round-trip test first, then make it pass.
 - Never mark a task done without proving it: run the tests, show the output. If a change touches retrieval quality, show before/after results on a fixed query set — not a claim that it "feels better".
 - Match existing style in a file you're editing even if you'd choose differently. Don't refactor adjacent code that isn't part of the task. Every changed line should trace back to the task at hand.
-- No temporary patches for root causes you understand. If a proper fix is out of scope, say so explicitly and record it in `to-do.txt` — don't paper over it.
+- No temporary patches for root causes you understand. If a proper fix is out of scope, say so explicitly and record it — a rejected approach with numbers goes under **Measured decisions**, a wishlist item goes in the local `to-do.txt` (which is gitignored and does not travel with the repo).
 
 ## Code standards
 
@@ -93,7 +93,7 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 - Naming follows Python convention: `snake_case` methods.
 - Clean imports at module top level. The model download and ONNX session load are deferred into `QwenEmbedding._load()` so that opening a store costs nothing — that laziness is deliberate, not an oversight.
 - No build artifacts committed. Compiled output, `.egg-info/`, `build/` and `dist/` stay untracked — add them to `.gitignore` rather than committing them.
-- No `TODO` comments scattered through source. Items belong in `to-do.txt` with enough context to act on.
+- No `TODO` comments scattered through source. Anything worth keeping goes in **Measured decisions** if it is a settled finding, or the local `to-do.txt` if it is just a wish.
 
 ## Tests
 
@@ -137,9 +137,73 @@ No workflow exists yet, but both commands below are real and green today, so a w
 
 A red run blocks merge. Don't add stub jobs with nothing to run.
 
-## Roadmap context
+## Measured decisions
 
-`to-do.txt` and the README roadmap hold the standing backlog. The two live threads:
+Numbers taken on a 16-core Windows laptop with an RTX 4060. They exist so nobody redoes
+this work or "optimises" one of these back into the code. `to-do.txt` is gitignored and
+local-only, so anything durable belongs here instead.
 
-- **Embedding model swap** — BERT mean-pooling is the weakest link in retrieval quality, not speed. `to-do.txt` item 13 covers moving to EmbeddingGemma via ONNX; it is blocked on a licence check, not on engineering.
-- **Agent memory layer** — `to-do.txt` item 17. This is the product; the store is plumbing.
+**No ANN index.** At 100k chunks x 768d, end to end:
+
+| | unfiltered | scoped 2% | scoped 90% |
+|---|---|---|---|
+| exhaustive scan | 8.4 ms | 3.3 ms | 10.0 ms |
+| hnswlib | 0.09 ms | 8.25 ms | — |
+
+hnswlib wins unfiltered by ~90x and loses filtered by ~275x: a filter disconnects its
+graph, while it only shortens an exhaustive scan. Almost every query here is scoped, and
+8 ms is invisible next to a ~2000 ms LLM call. Revisit past ~1M vectors, where a scan
+reaches ~230 ms.
+
+**`SUBSET_SCAN_THRESHOLD = 0.10`.** `self._vectors[rows]` copies. Below ~10% selectivity
+the copy is cheaper than scanning everything; above it the copy dominates (at 40%: 29 ms
+copy vs 8 ms masked scan). Re-measure if the dimension or dtype changes.
+
+**Scopes match in memory, not in SQL.** Pulling 90k ids back out of SQLite cost 19.5 ms
+against ~0.2 ms for a numpy comparison. SQLite is durable storage plus the top-k text
+lookup; the numpy arrays are the index.
+
+**Normalise on insert.** Identical to per-query cosine within 4.8e-08 and 18x faster
+(129 ms -> 7.2 ms at 100k).
+
+**Qwen3-Embedding-0.6B over EmbeddingGemma-300M.** Gemma's official repo is *gated*, so
+every user would need an HF token — fatal for zero-config install regardless of licence.
+Qwen is Apache-2.0, ungated, and MRL-trained to 32 dims against Gemma's 128 floor. On the
+quickstart query "why did we not use redis": BERT scored the correct answer 0.656 and an
+irrelevant note 0.581 (gap 0.075); Qwen scores 0.699 vs 0.398 (gap 0.301, irrelevant
+ranks last). Dropping BERT also dropped torch, transformers and tiktoken — about 2.5 GB.
+
+**int8 is the fastest build on CPU.** Lower-bit exports are slower *and* change results:
+
+| build | KV dtype | query | 65 tok | 520 tok | cosine vs int8 |
+|---|---|---|---|---|---|
+| int8 | float32 | 22 ms | 57 ms | 478 ms | 1.0000 |
+| q4f16 | float16 | 21 ms | 119 ms | 990 ms | 0.8827 |
+| q4 | float32 | 21 ms | 113 ms | 921 ms | 0.8850 |
+| bnb4 | float32 | 115 ms | 232 ms | 1332 ms | 0.8956 |
+
+CPUs dequantise 4-bit per op with no native SIMD path. Thread pinning did not help
+either. `model_fp16` needs its `.onnx_data` companion and will not load without it.
+
+**No batching.** Throughput is flat at ~20 chunks/sec from batch 1 to 32, and padding
+perturbs the output — a padded text scores 0.946 against its unpadded self, only partly
+improved by deriving `position_ids` from the attention mask. Unbatched needs no padding
+and is exactly correct.
+
+**GPU is untried and the most promising remaining lever.** `available_providers()`
+already prefers CUDA > DirectML > CoreML over CPU, so `pip install onnxruntime-directml`
+(Windows, no CUDA setup) or `onnxruntime-gpu` is picked up with no code change. Both
+*replace* the `onnxruntime` package rather than coexisting. The payoff is ingest only:
+a 200-chunk PDF is ~95 s on CPU, while query embedding at 22 ms is already invisible.
+
+**Caveats on the above.** Every timing used synthetic vectors; correctness tests use the
+real model. MRL truncation was validated on 8 documents and 4 queries — top-1 survived to
+64 dims and broke at 32 — so `DEFAULT_DIM = 256` is chosen for headroom, not because 128
+was proven. `onnx-community` declares no licence in its repo metadata; the Apache-2.0
+grant is upstream Qwen's, and the revision is unpinned.
+
+## Roadmap
+
+The live thread is the **agent-memory layer**: chunk session traces and expose them over
+MCP so an agent can query mid-task. That is the product; this store is plumbing. The
+README roadmap and the local `to-do.txt` hold the rest of the wishlist.
