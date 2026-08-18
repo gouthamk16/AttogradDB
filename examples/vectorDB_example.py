@@ -18,7 +18,7 @@ pdf_path = "../sample_data/dpo_paper.pdf"
 text = read_pdf(pdf_path)
 splitter = TextSplitter(chunk_size=300, chunk_overlap=20)
 splitter.split_text(text)
-docs = splitter.get_docs(extract=True)
+docs = splitter.get_docs()
 
 store = VectorStore(indexing="brute-force", embedding_model="bert") 
 add_start = time.perf_counter()
@@ -79,7 +79,7 @@ pdf_path = "../sample_data/dpo_paper.pdf"
 text = read_pdf(pdf_path)
 splitter = TextSplitter(chunk_size=350, chunk_overlap=20)
 splitter.split_text(text)
-docs = splitter.get_docs(extract=True)
+docs = splitter.get_docs()
 
 store2 = VectorStore(indexing="hnsw")
 addhnsw_start = time.perf_counter()

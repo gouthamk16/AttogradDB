@@ -1,12 +1,8 @@
-## Function to read text from a pdf file
+from pypdf import PdfReader
 
-import PyPDF2
 
-def read_pdf(file_path):
-    pdf_file = open(file_path, 'rb')
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    text = ''
-    for page_num in range(len(pdf_reader.pages)):
-        page = pdf_reader.pages[page_num]
-        text += page.extract_text()
-    return text
+def read_pdf(file_path: str) -> str:
+    """Extract text from every page of a PDF."""
+    with open(file_path, "rb") as pdf_file:
+        reader = PdfReader(pdf_file)
+        return "".join(page.extract_text() for page in reader.pages)
