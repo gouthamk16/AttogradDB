@@ -195,7 +195,32 @@ perturbs the output — a padded text scores 0.946 against its unpadded self, on
 improved by deriving `position_ids` from the attention mask. Unbatched needs no padding
 and is exactly correct.
 
-**GPU is supported but untried, and safe to leave uninstalled.** `pip install
+**GPU was tried. It helps ingest and badly hurts search, so it stays opt-in.**
+Measured with onnxruntime-directml 1.24.4 on an RTX 4060, 96 real PDF chunks:
+
+| profile | provider | ingest | chunks/sec | query (median) | query (worst) |
+|---|---|---|---|---|---|
+| int8-cpu | CPU | 9.3 s | 10.4 | **34 ms** | 39 ms |
+| fp16-gpu | DirectML | **4.6 s** | 20.8 | 238 ms | 476 ms |
+
+Ingest is 2.0x faster. Search is ~7x slower *and* far less predictable, because
+DirectML compiles kernels per input shape and real queries vary in length, so every
+query pays a recompile. A dedicated session doing one repeated query shape hits 22 ms,
+which is how the micro-benchmark misled: it never changed shape. For an agent-memory
+workload, which searches constantly and ingests occasionally, this is a bad trade.
+
+So `fp16-gpu` exists for bulk one-off ingestion and nothing else. Untested and possibly
+better: the CUDA EP handles dynamic shapes more gracefully than DirectML, and shape
+bucketing would cut the recompiles.
+
+**Profiles pair a build with a provider, because the two are not independent.**
+int8 on DirectML is ~5x slower than int8 on CPU, so an earlier version that preferred
+any available GPU for the default int8 build was a straight regression. int8 and fp16
+also disagree at 0.913 cosine, so the profile is stamped in the `meta` table and
+reopening under a different one raises. Within the fp16 build, DML and CPU agree to
+0.99996, so provider choice alone is safe there -- it is the *build* that changes vectors.
+
+**Original note, kept because the fallback machinery still matters:** `pip install
 onnxruntime-directml` (Windows, no CUDA setup) or `onnxruntime-gpu` is picked up with no
 code change; both *replace* the `onnxruntime` package rather than coexisting. The payoff
 is ingest only: a 200-chunk PDF is ~95 s on CPU, while query embedding at 22 ms is

@@ -24,10 +24,15 @@ class StubEmbedding:
     def embed_query(self, text):
         return self._vector(text)
 
+    def embed_documents(self, texts):
+        if not texts:
+            return np.empty((0, NATIVE_DIM), dtype=np.float32)
+        return np.stack([self._vector(t) for t in texts])
+
 
 @pytest.fixture
 def stub_embedding(monkeypatch):
-    monkeypatch.setattr(attodb, "QwenEmbedding", StubEmbedding)
+    monkeypatch.setattr(attodb, "QwenEmbedding", lambda **kw: StubEmbedding())
 
 
 @pytest.fixture
@@ -36,13 +41,13 @@ def spy_embedding(monkeypatch):
     calls = []
 
     class Spy(StubEmbedding):
-        def embed_document(self, text):
-            calls.append(("document", text))
-            return super().embed_document(text)
+        def embed_documents(self, texts):
+            calls.extend(("document", t) for t in texts)
+            return super().embed_documents(texts)
 
         def embed_query(self, text):
             calls.append(("query", text))
             return super().embed_query(text)
 
-    monkeypatch.setattr(attodb, "QwenEmbedding", Spy)
+    monkeypatch.setattr(attodb, "QwenEmbedding", lambda **kw: Spy())
     return calls
