@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "attogradDB"
+version = "0.5.0"
+description = "A lightweight document-oriented vector store for semantic retrieval"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Goutham Krishnan" }]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "torch>=2.0",
+    "transformers",
+    "tiktoken",
+    "hnswlib",
+    "pypdf",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/gouthamk16/AttogradDB"
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "build", "twine"]
+
+[tool.setuptools.packages.find]
+include = ["attogradDB*"]
+
+[tool.pytest.ini_options]
+testpaths = ["attogradDB/tests"]
+
+[tool.ruff]
+line-length = 100
