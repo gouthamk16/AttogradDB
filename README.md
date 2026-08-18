@@ -1,19 +1,18 @@
 # AttogradDB
 
-A lightweight document based vector store for fast and efficient semantic retrieval. Lightning fast vector-based search for NoSQL and plaintext documents, embedded using BERT. 
+A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 0.5.0
+Version 0.6.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
 ## Features
 
-- NoSQL Key Value Store
-- Plaintext document processing
-- Document Embedding
-- Customizable Vector Store
-- HNSW Indexing
-- Semantic search for NoSQL documents
+- Single-file SQLite storage, no server and no separate index
+- Scoped search by project, session, or kind
+- Deletion as a first-class operation -- forgetting matters as much as remembering
+- Plaintext, PDF and JSON ingestion with overlap-aware chunking
+- Exhaustive exact search: no approximate-recall tradeoff
 
 
 ## Installation
@@ -46,59 +45,65 @@ python -m pytest attogradDB/tests
 
 Examples can be found at `AttogradDB/examples`
 
+## Usage
+
+```python
+from attogradDB import VectorStore
+
+store = VectorStore(path="memory.db")          # omit path for an in-memory store
+
+ids = store.add(
+    ["retry logic lives in client.py", "we ruled out Redis: no durability"],
+    project="payments",
+    session="2026-08-18",
+)
+
+for doc_id, score, text in store.search("why not redis", top_n=3):
+    print(score, text)
+
+store.search("redis", project="payments")      # scoped
+store.delete(session="2026-08-18")             # forget
+store.close()
+```
+
+A runnable version is in `examples/quickstart.py`.
+
 ## Documentation
 
 ### VectorStore
 
--   `__init__(indexing="hnsw", embedding_model="bert", save_path=None, load_path=None)` Initialize a vector store. `indexing` is `"hnsw"` or `"brute-force"`; an unknown value raises `ValueError`. Setting `save_path` writes the index after every `add_text`; setting `load_path` restores one at construction.
+-   `__init__(path=None, embedding_model="bert")` Open a store. `path` is a SQLite file; `None` gives an in-memory store that is discarded on close.
 
--   `add_text(vector_id, input_data)` Add a single text document to the vector store after embedding.
+-   `add(texts, project=None, session=None, kind=None) -> list[int]` Embed and store a string or list of strings. Ids are generated and returned.
 
--   `add_documents(docs)` Bulk-add a list of JSON documents to the vector store after converting to text and embedding.
+-   `search(query, top_n=5, project=None, session=None, kind=None) -> list[tuple[int, float, str]]` Return the closest chunks as `(id, score, text)`, best first. Any of `project`/`session`/`kind` narrows the search.
 
--   `get_similar(query_text, top_n=5, decode_results=True)` Find top N semantically similar documents for a given query text. Returns list of tuples containing (vector_id, similarity_score, document_text) if decode_results=True, otherwise returns (vector_id, similarity_score).
+-   `delete(ids=None, project=None, session=None, kind=None) -> int` Delete matching chunks and return how many were removed. Requires at least one filter, so an empty call cannot wipe the store.
 
--   `similarity(vector_a, vector_b, method="cosine")` Calculate cosine similarity between two vectors.
+-   `similarity(vector_a, vector_b) -> float` Cosine similarity between two vectors.
 
--   `save_index(path=None)` Write the vectors and their source text to a JSON file. Falls back to the constructor's `save_path`, then to `stored_indices.json`.
+-   `len(store)` Number of stored chunks. `store.close()` closes the database.
 
--   `load_index(path=None)` Restore an index written by `save_index`, rebuilding the HNSW graph. Falls back to the same defaults.
+### Ingestion
 
-### keyValueStore
+-   `TextSplitter(chunk_size=200, chunk_overlap=20)` from `attogradDB.io` — fixed-size character chunking. `split_text(text)` then `get_docs()`.
 
--   `create_master_collection(name)` Create a new master collection to group related collections.
-
--   `create_collection(name, master_collection="default")` Create a new collection within a master collection.
-
--   `use_collection(collection, master_collection="default")` Switch to a specific collection. Raises `FileNotFoundError` if it does not exist.
-
--   `add(data, doc_id=None)` Add document(s) to current collection with optional custom IDs.
-
--   `add_json(json_file)` Add documents from a JSON file to current collection.
-
--   `search(key, value)` Search documents by key-value pair in current collection.
-
--   `to_vector(indexing="brute-force", embedding_model="bert", collection=None, master_collection=None)` Convert collection documents to a vector store. The internal `_id` is excluded from the embedded text. (`toVector()` still works but is deprecated.)
+-   `read_pdf(path)` from `attogradDB.utils` — extract text from every page via pypdf.
 
 ### Embedding
 
 #### `BertEmbedding`
 
--   Generates BERT-based embeddings for input text (768-d, mean-pooled last hidden state).
+-   Generates BERT-based embeddings (768-d, mean-pooled last hidden state). Vectors are L2-normalised on insert, which makes every comparison a plain dot product.
 
-### Indexing
+## Design notes
 
-#### `HNSW`
-
--   Implements Hierarchical Navigable Small World indexing over `hnswlib`.
-
--   Provides efficient approximate nearest-neighbor search for large data. Capacity doubles automatically as the store grows.
-
-#### `Clustered Brute-Force`
-
--   Implements brute-force search of clustered documents.
-
--   Lightspeed search for small to medium sized text and NoSQL documents.
+Search scans every candidate vector rather than using an ANN index. Measured at 100k chunks
+of 768 dimensions: 8 ms unfiltered, 3 ms scoped to 2% of the store. An HNSW index is faster
+unfiltered but roughly 275x slower once a filter is applied, because filtering disconnects its
+graph while it only shortens an exhaustive scan. Since almost every query here is scoped, and
+8 ms is invisible next to an LLM call, the index is not worth its cost. See `to-do.txt` for the
+numbers and for the point at which this stops being true.
 
 ## Roadmap
 
