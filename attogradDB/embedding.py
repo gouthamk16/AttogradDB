@@ -25,11 +25,31 @@ class QwenEmbedding:
     store does not trigger a 600MB download.
     """
 
-    def __init__(self):
+    def __init__(self, providers: list[str] | None = None):
+        self._requested_providers = providers
         self._session = None
         self._tokenizer = None
         self._kv_inputs: list[str] = []
         self._kv_shape = (1, 0, 0, 0)
+        self._kv_dtype = np.float32
+
+    @staticmethod
+    def available_providers() -> list[str]:
+        """Accelerated providers first, CPU last as the always-present fallback.
+
+        A plain `pip install onnxruntime` offers CPU only. Installing
+        onnxruntime-gpu or onnxruntime-directml instead makes CUDA or DirectML
+        available, and this picks it up without any config change. Worth doing if
+        you ingest large documents: embedding is ~480ms for a 520-token chunk on
+        CPU, and that is the only slow part of this library.
+        """
+        available = ort.get_available_providers()
+        preferred = (
+            "CUDAExecutionProvider",
+            "DmlExecutionProvider",
+            "CoreMLExecutionProvider",
+        )
+        return [p for p in preferred if p in available] + ["CPUExecutionProvider"]
 
     def _load(self) -> None:
         if self._session is not None:
@@ -38,16 +58,18 @@ class QwenEmbedding:
         self._tokenizer = Tokenizer.from_file(f"{path}/tokenizer.json")
         self._tokenizer.enable_truncation(MAX_TOKENS)
         self._session = ort.InferenceSession(
-            f"{path}/{MODEL_FILE}", providers=["CPUExecutionProvider"]
+            f"{path}/{MODEL_FILE}",
+            providers=self._requested_providers or self.available_providers(),
         )
         self._kv_inputs = [
             i.name for i in self._session.get_inputs() if i.name.startswith("past_key_values")
         ]
         # Shape is (batch, heads, past_len, head_dim); read it off rather than hardcoding.
-        _, heads, _, head_dim = next(
-            i.shape for i in self._session.get_inputs() if i.name in self._kv_inputs
-        )
+        spec = next(i for i in self._session.get_inputs() if i.name in self._kv_inputs)
+        _, heads, _, head_dim = spec.shape
         self._kv_shape = (1, heads, 0, head_dim)
+        # fp16 builds reject float32 cache tensors, so follow whatever the export declares.
+        self._kv_dtype = np.float16 if spec.type == "tensor(float16)" else np.float32
 
     def embed_document(self, text: str) -> np.ndarray:
         return self._embed(text)
@@ -65,7 +87,8 @@ class QwenEmbedding:
         }
         # This export carries a generation KV cache; for embedding it stays empty.
         for name in self._kv_inputs:
-            feed[name] = np.zeros(self._kv_shape, dtype=np.float32)
+            feed[name] = np.zeros(self._kv_shape, dtype=self._kv_dtype)
 
         hidden = self._session.run(["last_hidden_state"], feed)[0]
-        return hidden[0, -1]  # last-token pooling: the model's embedding sits on the EOS token
+        # Last-token pooling: the model's embedding sits on the trailing EOS token.
+        return hidden[0, -1].astype(np.float32)

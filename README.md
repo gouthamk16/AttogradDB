@@ -2,14 +2,14 @@
 
 A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 0.7.0
+Version 0.8.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
 ## Features
 
 - Single-file SQLite storage, no server and no separate index
-- Scoped search by project, session, or kind
+- Scoped search by project, session, or kind — one value or several at once
 - Deletion as a first-class operation -- forgetting matters as much as remembering
 - Plaintext, PDF and JSON ingestion with overlap-aware chunking
 - Exhaustive exact search: no approximate-recall tradeoff
@@ -77,9 +77,16 @@ A runnable version is in `examples/quickstart.py`.
 
 -   `add(texts, project=None, session=None, kind=None) -> list[int]` Embed and store a string or list of strings. Ids are generated and returned.
 
--   `search(query, top_n=5, project=None, session=None, kind=None) -> list[tuple[int, float, str]]` Return the closest chunks as `(id, score, text)`, best first. Any of `project`/`session`/`kind` narrows the search.
+-   `search(query, top_n=5, project=None, session=None, kind=None) -> list[tuple[int, float, str]]` Return the closest chunks as `(id, score, text)`, best first. Each scope takes a single value or a list of them, so one query can span several projects or sessions. Omitting a scope searches across all of it.
 
--   `delete(ids=None, project=None, session=None, kind=None) -> int` Delete matching chunks and return how many were removed. Requires at least one filter, so an empty call cannot wipe the store.
+    ```python
+    store.search("why not redis")                              # everything
+    store.search("why not redis", project="payments")          # one project
+    store.search("why not redis", project=["payments", "api"]) # several
+    store.search("what broke", session=["mon", "tue"], kind="note")
+    ```
+
+-   `delete(ids=None, project=None, session=None, kind=None) -> int` Delete matching chunks and return how many were removed. Scopes accept a list, matching `search()`. Requires at least one filter, so an empty call cannot wipe the store.
 
 -   `similarity(vector_a, vector_b) -> float` Cosine similarity between two vectors.
 
@@ -100,6 +107,8 @@ A runnable version is in `examples/quickstart.py`.
 -   Native output is 1024-d. Queries carry an instruction prefix and documents do not — the model is trained asymmetrically, and the store handles this for you.
 
 -   Embeds one text at a time. Batching gives no CPU throughput gain and padding perturbs the result, so it is deliberately not offered.
+
+-   Picks the best execution provider the installed `onnxruntime` offers, CPU last. Embedding is the only slow part of this library (~57ms for a 65-token chunk, ~480ms for 520 tokens on int8 CPU), so if you ingest large documents, replacing `onnxruntime` with `onnxruntime-gpu` (CUDA) or `onnxruntime-directml` (Windows) is picked up automatically with no code change.
 
 ## Design notes
 

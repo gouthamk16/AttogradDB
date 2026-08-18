@@ -47,8 +47,18 @@ they are:
 - **Embedding is one text at a time, on purpose.** Batching measured flat at ~20
   chunks/sec from batch 1 to 32, and padding changes the output (0.946 cosine against
   the unpadded vector). Don't add batching without re-measuring both.
+- **int8 is the fastest build on CPU, measured.** The 4-bit exports (q4, q4f16, bnb4)
+  are ~2x slower because CPUs dequantise them per op, and they only agree 0.88-0.90 with
+  int8 so they change results too. Don't "optimise" by switching quantisation without
+  re-running the comparison in to-do.txt item 13.
+- **Execution provider is auto-detected, not hardcoded.** `available_providers()` puts
+  CUDA/DML/CoreML ahead of CPU, so installing onnxruntime-gpu is picked up with no code
+  change. Never hardcode `["CPUExecutionProvider"]` again -- that silently ignored a GPU.
 - **Full 1024-d vectors go to SQLite; the in-memory index is truncated to `dim`.** That
   is what lets `dim` change without re-embedding. Truncation must renormalise.
+- **Scopes accept a value or a list.** `Scope = str | list[str] | None`. `search()`
+  matches in memory via `np.isin`; `delete()` builds a SQL `IN`. An empty list matches
+  nothing rather than everything -- that distinction is tested, don't "simplify" it away.
 
 `keyValueStore` is gone. Don't reintroduce a second store. `torch`, `transformers` and
 `tiktoken` are gone too — `tokenizers` loads `tokenizer.json` directly. Don't pull them
