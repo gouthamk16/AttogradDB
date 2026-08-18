@@ -2,28 +2,23 @@
 
 A lightweight, document-oriented vector store for semantic retrieval over plaintext, PDF, and JSON documents. Pure-Python library, published to PyPI as `attogradDB`.
 
-Two public surfaces, both in `attogradDB/attodb.py`:
-
-- **`VectorStore`** — embed text, index it (HNSW or brute-force), query by cosine similarity, decode results back to source text.
-- **`keyValueStore`** — a JSON-file-backed NoSQL store organised as master collection → collection → documents, with `toVector()` to promote a collection into a `VectorStore`.
+There is one public surface: **`VectorStore`** in `attogradDB/attodb.py`. Add text, search it, scope by project/session/kind, delete what you no longer want.
 
 ## Layout
 
 ```
 attogradDB/
-  attodb.py      VectorStore only. Owns {id: vector} and {id: text}.
-  kvstore.py     keyValueStore. All filesystem access goes through _path/_read/_write.
+  attodb.py      VectorStore. SQLite for durability, numpy arrays as the search index.
   embedding.py   BertEmbedding — HF AutoModel, mean-pooled last hidden state (768-d).
-  indexing.py    HNSW wrapper over hnswlib (cosine, dim=768, doubles capacity when full).
   tokenizer.py   tokenize()/decode() — tiktoken, falling back to AutoTokenizer.
   io.py          TextSplitter — fixed-size character chunking with overlap.
   utils.py       read_pdf() via pypdf.
   tests/         pytest suites; conftest.py provides a stub embedder for the fast ones.
-examples/        Runnable usage examples. These are the de-facto integration tests.
-sample_data/     PDFs used by the examples.
+examples/        quickstart.py — the de-facto integration test.
+sample_data/     PDFs used by the example.
 ```
 
-`attogradDB/__init__.py` exports `VectorStore`, `keyValueStore`, and `read_pdf`. `attogradDB.attodb` still re-exports `keyValueStore` for backwards compatibility, but new code should import it from `attogradDB.kvstore`.
+`attogradDB/__init__.py` exports `VectorStore` and `read_pdf`.
 
 ## Commands
 
@@ -35,16 +30,19 @@ python -m pytest attogradDB/tests -v
 
 ## State
 
-The package was non-functional before the 2026-08-18 revamp — `VectorStore` could not be
-constructed at all — and a code review found 15 defects. All are fixed and covered by tests;
-`git log` has the details. Two things worth knowing before making changes:
+Rewritten on 2026-08-18. Two things will look wrong if you don't know why they are the way
+they are:
 
-- **`VectorStore` owns the id→text map, not `BertEmbedding`.** Decoding used to work by hashing
-  a 768-float tuple, which never survived a save/load and collapsed duplicate texts onto one id.
-  Don't reintroduce a reverse lookup keyed on embedding values.
-- **`keyValueStore` is scheduled for replacement by Postgres/pgvector.** Its JSON backend is
-  deliberately minimal. Fix bugs in it, but don't invest in features there — reimplement
-  `_path`/`_read`/`_write` when the migration happens (`to-do.txt` item 10).
+- **There is no ANN index, deliberately.** Search scans every candidate. hnswlib was removed
+  after benchmarking: it wins unfiltered by ~90x but loses filtered queries by ~275x, and
+  nearly every query here is scoped. `to-do.txt` items 12, 15 and 16 hold the numbers, the
+  measured `SUBSET_SCAN_THRESHOLD`, and the conditions under which this decision flips.
+- **SQLite is the durable store; the numpy arrays are the index.** `_ids`, `_vectors` and
+  `_scopes` are all rebuilt by `_load()`. Scope columns live in memory too — round-tripping
+  90k ids through SQL cost 20ms against 0.2ms for a numpy comparison. `_texts()` is the one
+  hot-path SQL call, and it only ever fetches the top-k rows.
+
+`keyValueStore` is gone. Don't reintroduce a second store.
 
 ## Hard rules
 
@@ -53,8 +51,8 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 - Bug with clear, reproducible symptoms → fix autonomously: reproduce it, find the root cause, fix it, verify.
 - "Add X" / "change Y" without an exact spec → read the existing code first, propose an approach, wait for go-ahead.
 - Vague intent ("make retrieval better", "clean this up") → ask, don't guess and edit.
-- Never claim what code does without reading it. Never speculate about an API shape, a model's output dimensionality, or an `hnswlib` parameter — check the source or the docs.
-- Research before design, not from memory. `transformers`, `hnswlib`, and `tiktoken` APIs shift between versions; read the current docs rather than relying on training-data priors. Lay out the real alternatives with actual trade-offs and recommend one with a reason.
+- Never claim what code does without reading it. Never speculate about an API shape, a model's output dimensionality, or a library parameter — check the source or the docs.
+- Research before design, not from memory. `transformers`, `numpy` and `tiktoken` APIs shift between versions; read the current docs rather than relying on training-data priors. Lay out the real alternatives with actual trade-offs and recommend one with a reason.
 
 ## Execution
 
@@ -65,21 +63,21 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 
 ## Code standards
 
-- Simplest correct solution over the extensible one. A function earns its existence by being reused or by making the code clearer — not by anticipating future need. This is a ~400-line library; it does not need a plugin architecture.
+- Simplest correct solution over the extensible one. A function earns its existence by being reused or by making the code clearer — not by anticipating future need. This is a ~250-line library; it does not need a plugin architecture.
 - No comments that restate what the code does. Comment only the non-obvious: why an `ef_construction` value is what it is, a workaround for a library bug, an invariant not visible locally.
 - No commented-out code left behind.
 - Files under ~300 lines, functions under ~30 lines. Every module is currently well inside both.
 - Type-hint every public signature. Add hints to code you touch rather than in a sweeping pass.
 - Duplicated logic at 3+ occurrences gets extracted; 2 usually don't.
 - Every IO operation that can fail (missing collection, malformed JSON, unreadable PDF) gets explicit handling where the failure is actionable — not a blanket `try/except` at the call site.
-- Naming follows Python convention: `snake_case` methods. The camelCase `keyValueStore` class name is kept because it is published; `toVector` survives only as a deprecated alias of `to_vector`.
+- Naming follows Python convention: `snake_case` methods.
 - Clean imports at module top level. Exception: heavy imports (`transformers`, `torch`) may be deferred into the function that uses them if it measurably improves import time — note why inline if you do.
 - No build artifacts committed. Compiled output, `.egg-info/`, `build/` and `dist/` stay untracked — add them to `.gitignore` rather than committing them.
 - No `TODO` comments scattered through source. Items belong in `to-do.txt` with enough context to act on.
 
 ## Tests
 
-- `pytest` is the runner. `test_core.py`/`test_hnsw.py` are the original `unittest` classes and run real BERT; everything newer is plain pytest functions. New tests go in `attogradDB/tests/`, named `test_*.py`.
+- `pytest` is the runner, plain functions not `unittest` classes. `test_integration.py` runs real BERT and stays small; everything else uses the `stub_embedding` fixture. New tests go in `attogradDB/tests/`, named `test_*.py`.
 - Every bug fix lands with a test that fails before it and passes after. Show the failure, not just the pass.
 - Test observable behaviour, not internals. Assert on what `get_similar` returns, not on the shape of `self.index`.
 - Embedding-dependent tests are slow (they download and run BERT). Use the `stub_embedding` fixture from `conftest.py`, which maps text to a deterministic 768-d vector, unless the test genuinely needs the real model.
@@ -123,4 +121,5 @@ A red run blocks merge. Don't add stub jobs with nothing to run.
 
 `to-do.txt` and the README roadmap hold the standing backlog. The two live threads:
 
-- **More embedding models and index types** — both are currently selected by string comparison in `VectorStore.__init__`. Adding a third of either is the point at which a small registry earns its keep; not before.
+- **Embedding model swap** — BERT mean-pooling is the weakest link in retrieval quality, not speed. `to-do.txt` item 13 covers moving to EmbeddingGemma via ONNX; it is blocked on a licence check, not on engineering.
+- **Agent memory layer** — `to-do.txt` item 17. This is the product; the store is plumbing.
