@@ -1,63 +1,37 @@
-## Currently performing tokenization via tiktoken library and the gpt-4 tokenizer.
-## Future work -> implement a tokenizer from scratch
+from functools import lru_cache
 
 import tiktoken
-from transformers import GPT2Tokenizer, AutoTokenizer
+from transformers import AutoTokenizer
 
-def tokenize(text, llm_tokenizer="gpt-4", max_length=10, padding_token=0):
+
+@lru_cache(maxsize=None)
+def _hf_tokenizer(name: str):
+    """Cached because embed() tokenizes once per document and loading is not free."""
+    return AutoTokenizer.from_pretrained(name)
+
+
+def tokenize(text: str, llm_tokenizer: str = "gpt-4", max_length: int = 10, padding_token: int = 0):
+    """Tokenize text with tiktoken, or with a HuggingFace tokenizer if the name is not an
+    OpenAI model.
+
+    Returns a padded/truncated list of ints for tiktoken, or a tensor mapping for
+    HuggingFace models -- the caller knows which backend it asked for.
     """
-    Tokenizes the input text using tiktoken, and pads or truncates the token sequence to a fixed length.
+    try:
+        enc = tiktoken.encoding_for_model(llm_tokenizer)
+    except KeyError:
+        # Not an OpenAI model name, so treat it as a HuggingFace repo id. truncation=True
+        # applies the tokenizer's own model_max_length (512 for BERT), without which any
+        # longer document blows up inside the model's position embeddings.
+        return _hf_tokenizer(llm_tokenizer)(text, return_tensors="pt", truncation=True)
 
-    Args:
-        text (str): The input text to tokenize.
-        llm_tokenizer (str): The name of the tokenizer model (default is "gpt-4").
-        max_length (int): The desired length for each token sequence (default is 10).
-        padding_token (int): The token to use for padding if the sequence is shorter than max_length (default is 0).
-
-    Returns:
-        List[int]: A list of tokens of length `max_length`.
-    """
-
-    if llm_tokenizer == "bert-base-uncased":
-        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-        tokens = tokenizer(text, return_tensors="pt")
-        return tokens
-
-    # Tokenizer
-    enc = tiktoken.encoding_for_model(llm_tokenizer)
-
-    # Tokenize the text
     tokens = enc.encode(text)
-
-    # Adjust the length of tokens to max_length
     if len(tokens) > max_length:
-        # Truncate if the sequence is longer than max_length
-        tokens = tokens[:max_length]
-    else:
-        # Pad with the padding_token if the sequence is shorter than max_length
-        tokens += [padding_token] * (max_length - len(tokens))
+        return tokens[:max_length]
+    return tokens + [padding_token] * (max_length - len(tokens))
 
-    return tokens
 
-def decode(tokens, llm_tokenizer="gpt-4", padding_token=0):
-    """
-    Decodes a list of tokens back into text using the tiktoken tokenizer.
-
-    Args:
-        tokens (List[int]): The list of tokens to decode.
-        llm_tokenizer (str): The name of the tokenizer model (default is "gpt-4").
-        padding_token (int): The padding token used in the sequence (default is 0).
-
-    Returns:
-        str: The decoded text string.
-    """
-    # Tokenizer
+def decode(tokens: list[int], llm_tokenizer: str = "gpt-4", padding_token: int = 0) -> str:
+    """Decode tiktoken ids back into text, dropping padding."""
     enc = tiktoken.encoding_for_model(llm_tokenizer)
-    
-    # Remove padding tokens
-    tokens = [token for token in tokens if token != padding_token]
-    
-    # Decode tokens back into text
-    text = enc.decode(tokens)
-    
-    return text
+    return enc.decode([token for token in tokens if token != padding_token])
