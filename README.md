@@ -2,7 +2,7 @@
 
 A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 0.8.0
+Version 0.8.1
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
@@ -108,7 +108,14 @@ A runnable version is in `examples/quickstart.py`.
 
 -   Embeds one text at a time. Batching gives no CPU throughput gain and padding perturbs the result, so it is deliberately not offered.
 
--   Picks the best execution provider the installed `onnxruntime` offers, CPU last. Embedding is the only slow part of this library (~57ms for a 65-token chunk, ~480ms for 520 tokens on int8 CPU), so if you ingest large documents, replacing `onnxruntime` with `onnxruntime-gpu` (CUDA) or `onnxruntime-directml` (Windows) is picked up automatically with no code change.
+-   Runs on CPU everywhere by default, including macOS. Embedding is the only slow part of this library (~57ms for a 65-token chunk, ~480ms for 520 tokens), so if you ingest large documents, replacing `onnxruntime` with `onnxruntime-gpu` (CUDA) or `onnxruntime-directml` (Windows) is detected and used automatically — and falls back to CPU if the accelerator cannot start, so it is safe to ship the same code to machines without a GPU. `QwenEmbedding().provider` reports what is actually running.
+
+-   CoreML on macOS is opt-in rather than automatic, since it can be slower than CPU on a model it has to partition heavily:
+
+    ```python
+    from attogradDB.embedding import QwenEmbedding
+    QwenEmbedding(providers=["CoreMLExecutionProvider", "CPUExecutionProvider"])
+    ```
 
 ## Design notes
 

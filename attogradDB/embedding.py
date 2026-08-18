@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import onnxruntime as ort
 from huggingface_hub import snapshot_download
@@ -35,21 +37,51 @@ class QwenEmbedding:
 
     @staticmethod
     def available_providers() -> list[str]:
-        """Accelerated providers first, CPU last as the always-present fallback.
+        """Opted-into accelerators first, CPU last as the always-present fallback.
 
-        A plain `pip install onnxruntime` offers CPU only. Installing
-        onnxruntime-gpu or onnxruntime-directml instead makes CUDA or DirectML
-        available, and this picks it up without any config change. Worth doing if
-        you ingest large documents: embedding is ~480ms for a 520-token chunk on
-        CPU, and that is the only slow part of this library.
+        Only CUDA and DirectML are auto-preferred, because neither ships in the
+        default wheel -- you get them by deliberately installing onnxruntime-gpu or
+        onnxruntime-directml, so their presence means acceleration was asked for.
+
+        CoreML is deliberately NOT auto-preferred even though it does ship in the
+        macOS wheel. Enabling it silently would change behaviour for every Mac user
+        without being asked, and CoreML can run slower than CPU on a model it has to
+        partition heavily -- which this export, with its 56 KV-cache inputs, is a
+        strong candidate for. Mac users who measure a win can opt in explicitly:
+
+            QwenEmbedding(providers=["CoreMLExecutionProvider", "CPUExecutionProvider"])
         """
         available = ort.get_available_providers()
-        preferred = (
-            "CUDAExecutionProvider",
-            "DmlExecutionProvider",
-            "CoreMLExecutionProvider",
-        )
+        preferred = ("CUDAExecutionProvider", "DmlExecutionProvider")
         return [p for p in preferred if p in available] + ["CPUExecutionProvider"]
+
+    @staticmethod
+    def _open_session(model_path: str, providers: list[str]) -> ort.InferenceSession:
+        """Open a session, degrading to CPU if the accelerator cannot be used.
+
+        onnxruntime does fall back on its own -- verified against providers missing
+        from the build, unknown provider names, and an empty list. But a provider
+        that is present in the build and fails at runtime init (onnxruntime-gpu on a
+        machine with no driver) is a path we cannot test here, and the fallback lives
+        in onnxruntime's Python layer where it has changed before. So the guarantee
+        is made here instead of assumed.
+        """
+        try:
+            return ort.InferenceSession(model_path, providers=providers)
+        except Exception as err:
+            if providers == ["CPUExecutionProvider"]:
+                raise
+            warnings.warn(
+                f"onnxruntime could not start with {providers}: {err}. Falling back to CPU.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+
+    @property
+    def provider(self) -> str | None:
+        """The provider actually in use, or None before the model has loaded."""
+        return self._session.get_providers()[0] if self._session else None
 
     def _load(self) -> None:
         if self._session is not None:
@@ -57,9 +89,8 @@ class QwenEmbedding:
         path = snapshot_download(MODEL_REPO, allow_patterns=["*.json", "*.txt", MODEL_FILE])
         self._tokenizer = Tokenizer.from_file(f"{path}/tokenizer.json")
         self._tokenizer.enable_truncation(MAX_TOKENS)
-        self._session = ort.InferenceSession(
-            f"{path}/{MODEL_FILE}",
-            providers=self._requested_providers or self.available_providers(),
+        self._session = self._open_session(
+            f"{path}/{MODEL_FILE}", self._requested_providers or self.available_providers()
         )
         self._kv_inputs = [
             i.name for i in self._session.get_inputs() if i.name.startswith("past_key_values")

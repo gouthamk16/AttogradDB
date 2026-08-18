@@ -51,9 +51,14 @@ they are:
   are ~2x slower because CPUs dequantise them per op, and they only agree 0.88-0.90 with
   int8 so they change results too. Don't "optimise" by switching quantisation without
   re-running the comparison under **Measured decisions**.
-- **Execution provider is auto-detected, not hardcoded.** `available_providers()` puts
-  CUDA/DML/CoreML ahead of CPU, so installing onnxruntime-gpu is picked up with no code
-  change. Never hardcode `["CPUExecutionProvider"]` again -- that silently ignored a GPU.
+- **Execution provider is auto-detected, with a guaranteed CPU fallback.**
+  `available_providers()` puts CUDA and DirectML ahead of CPU; `_open_session()` catches
+  a failed accelerator and reopens on CPU. Never hardcode `["CPUExecutionProvider"]`
+  again -- that silently ignored a GPU. And do not add CoreML to the auto-preferred list:
+  it ships in the default macOS wheel, so preferring it would change behaviour for every
+  Mac user unasked, and it can be slower on a heavily partitioned model like this one.
+  `AzureExecutionProvider` is also in the default build and is *remote inference* -- the
+  allowlist keeps it out, and a test locks that in.
 - **Full 1024-d vectors go to SQLite; the in-memory index is truncated to `dim`.** That
   is what lets `dim` change without re-embedding. Truncation must renormalise.
 - **Scopes accept a value or a list.** `Scope = str | list[str] | None`. `search()`
@@ -190,11 +195,23 @@ perturbs the output — a padded text scores 0.946 against its unpadded self, on
 improved by deriving `position_ids` from the attention mask. Unbatched needs no padding
 and is exactly correct.
 
-**GPU is untried and the most promising remaining lever.** `available_providers()`
-already prefers CUDA > DirectML > CoreML over CPU, so `pip install onnxruntime-directml`
-(Windows, no CUDA setup) or `onnxruntime-gpu` is picked up with no code change. Both
-*replace* the `onnxruntime` package rather than coexisting. The payoff is ingest only:
-a 200-chunk PDF is ~95 s on CPU, while query embedding at 22 ms is already invisible.
+**GPU is supported but untried, and safe to leave uninstalled.** `pip install
+onnxruntime-directml` (Windows, no CUDA setup) or `onnxruntime-gpu` is picked up with no
+code change; both *replace* the `onnxruntime` package rather than coexisting. The payoff
+is ingest only: a 200-chunk PDF is ~95 s on CPU, while query embedding at 22 ms is
+already invisible.
+
+The fallback is not assumed. onnxruntime's own degradation was verified against a
+provider missing from the build (with and without CPU listed), an unknown provider name,
+and an empty list -- all four ended on CPU, the bogus name printing "Falling back to
+['CPUExecutionProvider'] and retrying". The one path that cannot be tested from a machine
+without the hardware is a provider that is in the build but fails at runtime init, so
+`_open_session()` wraps session creation and reopens on CPU itself rather than trusting
+onnxruntime's Python layer, which has changed before. `QwenEmbedding.provider` reports
+what is actually running.
+
+Mac support is the reason CoreML is opt-in rather than automatic. Macs get the same
+CPU path as everyone else unless someone measures a CoreML win and passes it explicitly.
 
 **Caveats on the above.** Every timing used synthetic vectors; correctness tests use the
 real model. MRL truncation was validated on 8 documents and 4 queries — top-1 survived to
