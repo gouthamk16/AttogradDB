@@ -1,29 +1,16 @@
-# attoDB/embedding.py
+import numpy as np
 from transformers import AutoModel
+
 from attogradDB.tokenizer import tokenize
 
-## Embedding function that uses huggungface embeddings to produce embeddings for thr given token
-class BertEmbedding():
-    def __init__(self, model="bert-base-uncased", tokenizer="bert-base-uncased"):
-        self.model = model
+
+class BertEmbedding:
+    def __init__(self, model: str = "bert-base-uncased", tokenizer: str | None = None):
         self.model = AutoModel.from_pretrained(model)
-        self.llm_tokenizer = tokenizer
-        self.embedding_map = {}
-    
-    def embed(self, text):
+        # Defaulting the tokenizer to the model keeps the two from silently diverging.
+        self.llm_tokenizer = tokenizer or model
+
+    def embed(self, text: str) -> np.ndarray:
         inputs = tokenize(text, llm_tokenizer=self.llm_tokenizer)
         outputs = self.model(**inputs)
-        embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy().flatten()
-        self.embedding_map[tuple(embedding)] = text
-        return embedding
-
-    def reverse_embedding(self, embedding):
-        text = self.embedding_map.get(tuple(embedding))
-        return text
-    
-    
-# text = "Hello im the price of russia."
-# embeddings = BertEmbedding()
-# print(embeddings.embed(text))
-# print(len(embeddings.embed(text)))
-# print(embeddings.reverse_embedding(embeddings.embed(text)))
+        return outputs.last_hidden_state.mean(dim=1).detach().numpy().flatten()
