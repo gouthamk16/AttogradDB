@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from attogradDB.attodb import VectorStore
-from attogradDB.embedding import NATIVE_DIM
+from attogradDB.embedding import NATIVE_DIM, QwenEmbedding
 
 DOCS = ["the quick brown fox", "the cat sat on the mat", "the rabbit hole is deep"]
 
@@ -220,3 +220,60 @@ def test_queries_and_documents_take_different_paths(spy_embedding):
     store.search("a question")
 
     assert [kind for kind, _ in calls] == ["document", "query"]
+
+
+# --- searching across several projects or sessions at once ---
+
+
+def test_search_across_several_projects(store):
+    store.add(["alpha note"], project="a")
+    store.add(["beta note"], project="b")
+    store.add(["gamma note"], project="c")
+
+    found = {text for _, _, text in store.search("note", top_n=99, project=["a", "b"])}
+    assert found == {"alpha note", "beta note"}
+
+
+def test_search_across_several_sessions(store):
+    for name in ("mon", "tue", "wed"):
+        store.add([f"{name} work"], session=name)
+
+    found = {text for _, _, text in store.search("work", top_n=99, session=["mon", "wed"])}
+    assert found == {"mon work", "wed work"}
+
+
+def test_list_scope_combines_with_single_scope(store):
+    store.add(["hit one"], project="a", kind="note")
+    store.add(["hit two"], project="b", kind="note")
+    store.add(["miss"], project="a", kind="code")
+
+    found = {text for _, _, text in store.search("hit", top_n=99, project=["a", "b"], kind="note")}
+    assert found == {"hit one", "hit two"}
+
+
+def test_empty_list_scope_matches_nothing(store):
+    store.add(DOCS, project="a")
+    assert store.search("fox", project=[]) == []
+
+
+def test_single_element_list_matches_the_plain_string(store):
+    store.add(["alpha note"], project="a")
+    store.add(["beta note"], project="b")
+    assert store.search("note", top_n=99, project=["a"]) == store.search(
+        "note", top_n=99, project="a"
+    )
+
+
+def test_delete_across_several_sessions(store):
+    for name in ("mon", "tue", "wed"):
+        store.add([f"{name} work"], session=name)
+
+    assert store.delete(session=["mon", "tue"]) == 2
+    assert [text for _, _, text in store.search("work", top_n=99)] == ["wed work"]
+
+
+def test_cpu_is_always_an_available_provider():
+    """Accelerated providers come first; CPU must remain the last-resort fallback."""
+    providers = QwenEmbedding.available_providers()
+    assert providers[-1] == "CPUExecutionProvider"
+    assert len(providers) == len(set(providers))

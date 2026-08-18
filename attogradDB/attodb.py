@@ -8,6 +8,9 @@ from attogradDB.embedding import NATIVE_DIM, QwenEmbedding
 EMBEDDING_MODELS = ("qwen3",)
 SCOPE_FIELDS = ("project", "session", "kind")
 
+# A scope is one value, several values, or unset (meaning "don't filter on this").
+Scope = str | list[str] | None
+
 # Vectors are stored at NATIVE_DIM and truncated to this for searching. Qwen3 is trained
 # with Matryoshka representation learning, so early dimensions carry the most signal;
 # top-1 hits survived truncation to 64 in local testing, and 256 leaves headroom.
@@ -107,11 +110,21 @@ class VectorStore:
 
     @staticmethod
     def _scope_sql(project, session, kind) -> tuple[list[str], list]:
+        """SQL clauses for the given scope. Used by delete(); search() matches in memory."""
         clauses, params = [], []
-        for field, value in (("project", project), ("session", session), ("kind", kind)):
-            if value is not None:
+        for field, value in zip(SCOPE_FIELDS, (project, session, kind)):
+            if value is None:
+                continue
+            if isinstance(value, str):
                 clauses.append(f"{field} = ?")
                 params.append(value)
+            else:
+                values = list(value)
+                if not values:
+                    clauses.append("0")  # an empty set matches nothing
+                    continue
+                clauses.append(f"{field} IN ({','.join('?' * len(values))})")
+                params.extend(values)
         return clauses, params
 
     def _scope_rows(self, project, session, kind) -> np.ndarray | None:
@@ -129,7 +142,11 @@ class VectorStore:
             return None
         mask = np.ones(len(self._ids), dtype=bool)
         for field, value in active:
-            mask &= self._scopes[field] == value
+            column = self._scopes[field]
+            if isinstance(value, str):
+                mask &= column == value
+            else:
+                mask &= np.isin(column, list(value))
         return np.flatnonzero(mask)
 
     def _texts(self, ids) -> dict[int, str]:
@@ -176,11 +193,15 @@ class VectorStore:
         self,
         query: str,
         top_n: int = 5,
-        project: str | None = None,
-        session: str | None = None,
-        kind: str | None = None,
+        project: Scope = None,
+        session: Scope = None,
+        kind: Scope = None,
     ) -> list[tuple[int, float, str]]:
-        """Return the top_n closest chunks as (id, score, text), best first."""
+        """Return the top_n closest chunks as (id, score, text), best first.
+
+        Each scope takes a single value or a list of them, so one query can span
+        several projects or sessions. Omit a scope to search across all of it.
+        """
         if len(self._ids) == 0:
             return []
 
@@ -216,11 +237,14 @@ class VectorStore:
     def delete(
         self,
         ids: list[int] | None = None,
-        project: str | None = None,
-        session: str | None = None,
-        kind: str | None = None,
+        project: Scope = None,
+        session: Scope = None,
+        kind: Scope = None,
     ) -> int:
-        """Delete chunks matching the given filters. Returns how many were removed."""
+        """Delete chunks matching the given filters. Returns how many were removed.
+
+        Scopes accept a single value or a list, matching search().
+        """
         if ids is not None and not ids:
             return 0
 
