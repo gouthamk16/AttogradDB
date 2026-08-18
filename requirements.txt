@@ -1,6 +1,0 @@
-numpy
-tiktoken
-transformers
-PyPDF2
-graphing
-hnswlib
