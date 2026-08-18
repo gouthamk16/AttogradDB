@@ -2,7 +2,7 @@
 
 A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 0.6.0
+Version 0.7.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
@@ -13,6 +13,7 @@ Version 0.6.0
 - Deletion as a first-class operation -- forgetting matters as much as remembering
 - Plaintext, PDF and JSON ingestion with overlap-aware chunking
 - Exhaustive exact search: no approximate-recall tradeoff
+- Matryoshka dimensions: search at 256-d, keep the full 1024-d on disk
 
 
 ## Installation
@@ -72,7 +73,7 @@ A runnable version is in `examples/quickstart.py`.
 
 ### VectorStore
 
--   `__init__(path=None, embedding_model="bert")` Open a store. `path` is a SQLite file; `None` gives an in-memory store that is discarded on close.
+-   `__init__(path=None, embedding_model="qwen3", dim=256)` Open a store. `path` is a SQLite file; `None` gives an in-memory store discarded on close. `dim` is the search dimension: full 1024-d vectors are always stored, and the in-memory index is truncated to `dim` (Matryoshka), so you can reopen at a different `dim` without re-embedding. Reopening with a different `embedding_model` is refused, since vectors from different models are not comparable.
 
 -   `add(texts, project=None, session=None, kind=None) -> list[int]` Embed and store a string or list of strings. Ids are generated and returned.
 
@@ -92,9 +93,13 @@ A runnable version is in `examples/quickstart.py`.
 
 ### Embedding
 
-#### `BertEmbedding`
+#### `QwenEmbedding`
 
--   Generates BERT-based embeddings (768-d, mean-pooled last hidden state). Vectors are L2-normalised on insert, which makes every comparison a plain dot product.
+-   Qwen3-Embedding-0.6B (Apache-2.0) via ONNX Runtime, CPU by default. The model downloads on first embed call (~600MB, int8) and is cached by `huggingface_hub`; opening a store does not trigger it.
+
+-   Native output is 1024-d. Queries carry an instruction prefix and documents do not — the model is trained asymmetrically, and the store handles this for you.
+
+-   Embeds one text at a time. Batching gives no CPU throughput gain and padding perturbs the result, so it is deliberately not offered.
 
 ## Design notes
 

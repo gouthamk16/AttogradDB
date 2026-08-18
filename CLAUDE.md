@@ -9,8 +9,7 @@ There is one public surface: **`VectorStore`** in `attogradDB/attodb.py`. Add te
 ```
 attogradDB/
   attodb.py      VectorStore. SQLite for durability, numpy arrays as the search index.
-  embedding.py   BertEmbedding — HF AutoModel, mean-pooled last hidden state (768-d).
-  tokenizer.py   tokenize()/decode() — tiktoken, falling back to AutoTokenizer.
+  embedding.py   QwenEmbedding — Qwen3-Embedding-0.6B via ONNX, last-token pooled (1024-d).
   io.py          TextSplitter — fixed-size character chunking with overlap.
   utils.py       read_pdf() via pypdf.
   tests/         pytest suites; conftest.py provides a stub embedder for the fast ones.
@@ -42,7 +41,18 @@ they are:
   90k ids through SQL cost 20ms against 0.2ms for a numpy comparison. `_texts()` is the one
   hot-path SQL call, and it only ever fetches the top-k rows.
 
-`keyValueStore` is gone. Don't reintroduce a second store.
+- **Queries and documents are embedded differently, on purpose.** Qwen3 is trained
+  asymmetrically: `embed_query()` prepends an instruction, `embed_document()` does not.
+  Collapsing them back into one method silently costs retrieval quality.
+- **Embedding is one text at a time, on purpose.** Batching measured flat at ~20
+  chunks/sec from batch 1 to 32, and padding changes the output (0.946 cosine against
+  the unpadded vector). Don't add batching without re-measuring both.
+- **Full 1024-d vectors go to SQLite; the in-memory index is truncated to `dim`.** That
+  is what lets `dim` change without re-embedding. Truncation must renormalise.
+
+`keyValueStore` is gone. Don't reintroduce a second store. `torch`, `transformers` and
+`tiktoken` are gone too — `tokenizers` loads `tokenizer.json` directly. Don't pull them
+back in without a reason that survives "this adds 2.5GB to every install".
 
 ## Hard rules
 
@@ -52,7 +62,7 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 - "Add X" / "change Y" without an exact spec → read the existing code first, propose an approach, wait for go-ahead.
 - Vague intent ("make retrieval better", "clean this up") → ask, don't guess and edit.
 - Never claim what code does without reading it. Never speculate about an API shape, a model's output dimensionality, or a library parameter — check the source or the docs.
-- Research before design, not from memory. `transformers`, `numpy` and `tiktoken` APIs shift between versions; read the current docs rather than relying on training-data priors. Lay out the real alternatives with actual trade-offs and recommend one with a reason.
+- Research before design, not from memory. `onnxruntime`, `tokenizers` and `numpy` APIs shift between versions; read the current docs rather than relying on training-data priors. Lay out the real alternatives with actual trade-offs and recommend one with a reason.
 
 ## Execution
 
@@ -71,7 +81,7 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 - Duplicated logic at 3+ occurrences gets extracted; 2 usually don't.
 - Every IO operation that can fail (missing collection, malformed JSON, unreadable PDF) gets explicit handling where the failure is actionable — not a blanket `try/except` at the call site.
 - Naming follows Python convention: `snake_case` methods.
-- Clean imports at module top level. Exception: heavy imports (`transformers`, `torch`) may be deferred into the function that uses them if it measurably improves import time — note why inline if you do.
+- Clean imports at module top level. The model download and ONNX session load are deferred into `QwenEmbedding._load()` so that opening a store costs nothing — that laziness is deliberate, not an oversight.
 - No build artifacts committed. Compiled output, `.egg-info/`, `build/` and `dist/` stay untracked — add them to `.gitignore` rather than committing them.
 - No `TODO` comments scattered through source. Items belong in `to-do.txt` with enough context to act on.
 

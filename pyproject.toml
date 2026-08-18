@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "attogradDB"
-version = "0.6.0"
+version = "0.7.0"
 description = "A lightweight, local-first vector store for scoped semantic retrieval"
 readme = "README.md"
 license = { text = "MIT" }
@@ -12,9 +12,9 @@ authors = [{ name = "Goutham Krishnan" }]
 requires-python = ">=3.11"
 dependencies = [
     "numpy",
-    "torch>=2.0",
-    "transformers",
-    "tiktoken",
+    "onnxruntime",
+    "tokenizers",
+    "huggingface_hub",
     "pypdf",
 ]
 classifiers = [
