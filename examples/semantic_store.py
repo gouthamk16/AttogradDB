@@ -1,8 +1,12 @@
+from pathlib import Path
+
 from attogradDB.kvstore import keyValueStore
+
+HERE = Path(__file__).parent
 
 # Initialize the store with the path to the JSON file
 # Creates a new json file if it doesn't exist with default master collection and collection
-store = keyValueStore(json_path="data.json")
+store = keyValueStore(json_path=str(HERE / "data.json"))
 
 # Create a new master collection (optional)
 store.create_master_collection("users")
@@ -54,14 +58,16 @@ store.create_collection("sample_data", master_collection="test1")
 store.use_collection("sample_data", master_collection="test1")
 
 # add multiple json documents into the collection
-store.add_json("input_data/example_1.json")
-store.add_json("input_data/example_2.json")
+store.add_json(str(HERE / "input_data" / "example_1.json"))
+store.add_json(str(HERE / "input_data" / "example_2.json"))
 
 
 # Example retrieval for a specific key:
 print("First document in the store:", store[0])       # Accesses the first dictionary in the store
 
-# Access the data instance with "id" value 104
+# search() runs against the current collection, which is now test1/sample_data.
+# Switch back to the employees collection to find the document with "id" 104.
+store.use_collection("employees", master_collection="users")
 print("Documents with id 104:", store.search("id", 104))
 
 # Convert current collection to vector store

@@ -1,16 +1,19 @@
 import time
+from pathlib import Path
 
 # Add the directory containing attodb to sys.path
 from attogradDB.attodb import VectorStore
 from attogradDB.io import TextSplitter
 from attogradDB.utils import read_pdf
 
+HERE = Path(__file__).parent
+
 # Document store implementation (vectorstore on top of textsplitter)
 # Brute Force Indexing
 
 print("\nDocument store and retrieval using brute-force index\n")
 
-pdf_path = "../sample_data/dpo_paper.pdf"
+pdf_path = str(HERE.parent / "sample_data" / "dpo_paper.pdf")
 text = read_pdf(pdf_path)
 splitter = TextSplitter(chunk_size=300, chunk_overlap=20)
 splitter.split_text(text)
@@ -35,13 +38,13 @@ print(results)
 # Initialize the vector store
 store = VectorStore(embedding_model="bert")
 
-# Add vectors using text input (which will be tokenized using the 'gpt-4' tokenizer)
+# Add vectors using text input (embedded with BERT)
 store.add_text("vec1", "The quick brown fox")
 store.add_text("vec2", "The lazy dog")
 store.add_text("vec3", "A quick fox jumps over")
 
 # Query the store with a text input and find the top 2 similar vectors
-results = store.get_similar("The brown fox is quick", max_length=10, top_n=2)
+results = store.get_similar("The brown fox is quick", top_n=2)
 
 # Output results
 print(store.vector)
@@ -54,7 +57,7 @@ print(results)
 # Initialize the vector store with the 'hnsw' indexing method
 store = VectorStore()
 
-# Add vectors using text input (which will be tokenized using the 'gpt-4' tokenizer)
+# Add vectors using text input (embedded with BERT)
 store.add_text("vec1", "The quick brown fox")
 store.add_text("vec2", "The lazy dog")
 store.add_text("vec3", "A quick fox jumps over")
@@ -71,7 +74,7 @@ print(results)
 
 print("\nDocument store and retrieval using HNSW index\n")
 
-pdf_path = "../sample_data/dpo_paper.pdf"
+pdf_path = str(HERE.parent / "sample_data" / "dpo_paper.pdf")
 text = read_pdf(pdf_path)
 splitter = TextSplitter(chunk_size=350, chunk_overlap=20)
 splitter.split_text(text)
