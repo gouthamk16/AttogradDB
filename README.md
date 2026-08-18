@@ -2,7 +2,7 @@
 
 A lightweight document based vector store for fast and efficient semantic retrieval. Lightning fast vector-based search for NoSQL and plaintext documents, embedded using BERT. 
 
-Version 0.4.2 (pip package for 0.4.2 not available yet)
+Version 0.5.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
@@ -21,7 +21,7 @@ Version 0.4.2 (pip package for 0.4.2 not available yet)
 ### Method 1: Install the PyPI package
 
 ```bash
-pip3 install attogradDB==0.3.1
+pip install attogradDB
 ```
 
 ### Method 2: Clone and build from source
@@ -36,9 +36,10 @@ cd AttogradDB
 python3 -m venv .venv
 source .venv/bin/activate
 ```
-Build setup dependencies
+Install in editable mode with the dev extras and run the tests
 ```bash
-pip3 install -e .
+pip install -e ".[dev]"
+python -m pytest attogradDB/tests
 ```
 
 ## Usage
@@ -49,7 +50,7 @@ Examples can be found at `AttogradDB/examples`
 
 ### VectorStore
 
--   `__init__(indexing="hnsw", embedding_model="bert", save_index=False, save_path=None)` Initialize vector store with specified indexing and embedding model.
+-   `__init__(indexing="hnsw", embedding_model="bert", save_path=None, load_path=None)` Initialize a vector store. `indexing` is `"hnsw"` or `"brute-force"`; an unknown value raises `ValueError`. Setting `save_path` writes the index after every `add_text`; setting `load_path` restores one at construction.
 
 -   `add_text(vector_id, input_data)` Add a single text document to the vector store after embedding.
 
@@ -59,9 +60,9 @@ Examples can be found at `AttogradDB/examples`
 
 -   `similarity(vector_a, vector_b, method="cosine")` Calculate cosine similarity between two vectors.
 
--   `save_path()` Save the vector index to a json file. `None` by default.
+-   `save_index(path=None)` Write the vectors and their source text to a JSON file. Falls back to the constructor's `save_path`, then to `stored_indices.json`.
 
--   `load_path()` Loads a json file containing indexes into the VectorDB. `None` by default.
+-   `load_index(path=None)` Restore an index written by `save_index`, rebuilding the HNSW graph. Falls back to the same defaults.
 
 ### keyValueStore
 
@@ -69,7 +70,7 @@ Examples can be found at `AttogradDB/examples`
 
 -   `create_collection(name, master_collection="default")` Create a new collection within a master collection.
 
--   `use_collection(collection, master_collection="default")` Switch to a specific collection for operations.
+-   `use_collection(collection, master_collection="default")` Switch to a specific collection. Raises `FileNotFoundError` if it does not exist.
 
 -   `add(data, doc_id=None)` Add document(s) to current collection with optional custom IDs.
 
@@ -77,23 +78,21 @@ Examples can be found at `AttogradDB/examples`
 
 -   `search(key, value)` Search documents by key-value pair in current collection.
 
--   `toVector(indexing="brute-force", embedding_model="bert", collection=None, master_collection=None)` Convert collection documents to vector store with specified indexing and embedding model.
+-   `to_vector(indexing="brute-force", embedding_model="bert", collection=None, master_collection=None)` Convert collection documents to a vector store. The internal `_id` is excluded from the embedded text. (`toVector()` still works but is deprecated.)
 
 ### Embedding
 
 #### `BertEmbedding`
 
--   Generates BERT-based embeddings for input text.
-
--   Supports reverse mapping from embeddings back to text.
+-   Generates BERT-based embeddings for input text (768-d, mean-pooled last hidden state).
 
 ### Indexing
 
 #### `HNSW`
 
--   Implements Hierarchical Navigable Small Words indexing.
+-   Implements Hierarchical Navigable Small World indexing over `hnswlib`.
 
--   Provides efficient approximate nearest-neighbor search for large data.
+-   Provides efficient approximate nearest-neighbor search for large data. Capacity doubles automatically as the store grows.
 
 #### `Clustered Brute-Force`
 
@@ -106,8 +105,6 @@ Examples can be found at `AttogradDB/examples`
 - Add a method for performance logging.
 - LLM based chunking.
 - Tests for lading and saving indexes locally.
-- Add support for GPU-accelerated embedding generation and vector search using cuda.
-- C/Rust backend for similarity search and indexing.
 - Adding support for more embedding models and indexing methods.
 - Adding support for more document types (currently we have pdf, json and txt. Need to add support for docx and images).
 
