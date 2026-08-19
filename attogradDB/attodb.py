@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from attogradDB.embedding import DEFAULT_PROFILE, NATIVE_DIM, QwenEmbedding
+from attogradDB.embedding import NATIVE_DIM, QwenEmbedding
 
 EMBEDDING_MODELS = ("qwen3",)
 SCOPE_FIELDS = ("project", "session", "kind")
@@ -50,7 +50,6 @@ class VectorStore:
         path: str | None = None,
         embedding_model: str = "qwen3",
         dim: int = DEFAULT_DIM,
-        profile: str = DEFAULT_PROFILE,
     ):
         if embedding_model not in EMBEDDING_MODELS:
             raise ValueError(
@@ -60,33 +59,27 @@ class VectorStore:
             raise ValueError(f"dim must be in (0, {NATIVE_DIM}], got {dim}")
 
         self.dim = dim
-        self.embedding_model = QwenEmbedding(profile=profile)
+        self.embedding_model = QwenEmbedding()
         self.db = sqlite3.connect(path or ":memory:")
         self.db.executescript(SCHEMA)
-        self._check_model(embedding_model, profile)
+        self._check_model(embedding_model)
         self._load()
 
-    def _check_model(self, embedding_model: str, profile: str) -> None:
-        """Refuse to mix vectors from different models or builds in one store.
+    def _check_model(self, embedding_model: str) -> None:
+        """Refuse to mix vectors from different models in one store.
 
-        The profile matters as much as the model: int8 and fp16 of the same weights
-        agree only to 0.913, so querying an int8-built store with fp16 vectors would
-        quietly degrade every result.
+        Embedding models turn over faster than stores do, and a swapped model does not
+        error -- it quietly returns worse results. This makes that case loud.
         """
         stored = dict(self.db.execute("SELECT key, value FROM meta"))
         if not stored:
             with self.db:
-                self.db.executemany(
-                    "INSERT INTO meta VALUES (?, ?)",
-                    [("model", embedding_model), ("profile", profile)],
-                )
-            return
-        for key, value in (("model", embedding_model), ("profile", profile)):
-            if stored.get(key, value) != value:
-                raise ValueError(
-                    f"store was built with {key}={stored[key]!r}, cannot reopen as "
-                    f"{value!r} -- vectors are not comparable"
-                )
+                self.db.execute("INSERT INTO meta VALUES ('model', ?)", (embedding_model,))
+        elif stored.get("model") != embedding_model:
+            raise ValueError(
+                f"store was built with model={stored.get('model')!r}, cannot reopen as "
+                f"{embedding_model!r} -- vectors are not comparable"
+            )
 
     def _load(self) -> None:
         rows = self.db.execute(
