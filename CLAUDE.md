@@ -51,14 +51,10 @@ they are:
   are ~2x slower because CPUs dequantise them per op, and they only agree 0.88-0.90 with
   int8 so they change results too. Don't "optimise" by switching quantisation without
   re-running the comparison under **Measured decisions**.
-- **Execution provider is auto-detected, with a guaranteed CPU fallback.**
-  `available_providers()` puts CUDA and DirectML ahead of CPU; `_open_session()` catches
-  a failed accelerator and reopens on CPU. Never hardcode `["CPUExecutionProvider"]`
-  again -- that silently ignored a GPU. And do not add CoreML to the auto-preferred list:
-  it ships in the default macOS wheel, so preferring it would change behaviour for every
-  Mac user unasked, and it can be slower on a heavily partitioned model like this one.
-  `AzureExecutionProvider` is also in the default build and is *remote inference* -- the
-  allowlist keeps it out, and a test locks that in.
+- **CPU only, and that is a decision, not an oversight.** A GPU path was built,
+  measured and removed. See **Measured decisions**; do not add one back without
+  re-running that comparison. `AzureExecutionProvider` appears in the default build and
+  is *remote inference* -- never put it in a provider list.
 - **Full 1024-d vectors go to SQLite; the in-memory index is truncated to `dim`.** That
   is what lets `dim` change without re-embedding. Truncation must renormalise.
 - **Scopes accept a value or a list.** `Scope = str | list[str] | None`. `search()`
@@ -88,8 +84,8 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 
 ## Code standards
 
-- Simplest correct solution over the extensible one. A function earns its existence by being reused or by making the code clearer — not by anticipating future need. This is a ~250-line library; it does not need a plugin architecture.
-- No comments that restate what the code does. Comment only the non-obvious: why an `ef_construction` value is what it is, a workaround for a library bug, an invariant not visible locally.
+- Simplest correct solution over the extensible one. A function earns its existence by being reused or by making the code clearer — not by anticipating future need. This is a ~400-line library; it does not need a plugin architecture.
+- No comments that restate what the code does. Comment only the non-obvious: why `SUBSET_SCAN_THRESHOLD` is 0.10, a workaround for a library bug, an invariant not visible locally.
 - No commented-out code left behind.
 - Files under ~300 lines, functions under ~30 lines. Every module is currently well inside both.
 - Type-hint every public signature. Add hints to code you touch rather than in a sweeping pass.
@@ -102,11 +98,11 @@ Before touching any file, ask: is the task unambiguous, and is it small (< 3 ste
 
 ## Tests
 
-- `pytest` is the runner, plain functions not `unittest` classes. `test_integration.py` runs real BERT and stays small; everything else uses the `stub_embedding` fixture. New tests go in `attogradDB/tests/`, named `test_*.py`.
+- `pytest` is the runner, plain functions not `unittest` classes. `test_integration.py` and `test_embedding.py` run the real model and stay small; everything else uses the `stub_embedding` fixture. New tests go in `attogradDB/tests/`, named `test_*.py`.
 - Every bug fix lands with a test that fails before it and passes after. Show the failure, not just the pass.
-- Test observable behaviour, not internals. Assert on what `get_similar` returns, not on the shape of `self.index`.
-- Embedding-dependent tests are slow (they download and run BERT). Use the `stub_embedding` fixture from `conftest.py`, which maps text to a deterministic 768-d vector, unless the test genuinely needs the real model.
-- Don't assert hardcoded floats to 15 decimal places against model output — `test_similarity` gets away with it only because it operates on literal vectors.
+- Test observable behaviour, not internals. Assert on what `search()` returns, not on the layout of `_vectors`.
+- Embedding-dependent tests are slow (first run downloads ~600MB, then ~50ms per call). Use the `stub_embedding` fixture from `conftest.py`, which maps text to a deterministic 1024-d vector, unless the test genuinely needs the real model.
+- Don't assert hardcoded floats against model output. Assert on ordering and on gaps between scores, which survive a model or quantisation change; exact values do not.
 - The full suite runs in ~10s. Keep it that way.
 
 ## Branching and PRs
@@ -129,7 +125,7 @@ Reviewer checks, in priority order:
 2. **Verification** — is there a test, and does it actually fail without the fix? "Tested manually" with no output is not review-ready.
 3. **Scope** — every changed line traces to the stated purpose. Unrelated reformatting gets pulled out.
 4. **Simplification** — is there a shorter correct version? A new abstraction with one caller gets flagged.
-5. **Performance** — only where it's measured. `update_index` is O(n) per insert and brute-force `get_similar` is O(n) per query; that's known and acceptable at current scale. Don't optimise either without a benchmark showing it matters.
+5. **Performance** — only where it's measured. `search()` is O(n) per query and `add()` re-stacks the index array; both are known and acceptable at current scale. Don't optimise either without a benchmark showing it matters, and check **Measured decisions** first in case it already exists.
 
 Run `/simplify` on the diff before requesting review. Don't merge with unresolved review comments, and don't weaken a test to make CI pass — fix what it's catching, or fix the test if the test is the thing that's wrong.
 
@@ -195,7 +191,7 @@ perturbs the output — a padded text scores 0.946 against its unpadded self, on
 improved by deriving `position_ids` from the attention mask. Unbatched needs no padding
 and is exactly correct.
 
-**GPU was tried. It helps ingest and badly hurts search, so it stays opt-in.**
+**GPU was tried, measured, and removed.**
 Measured with onnxruntime-directml 1.24.4 on an RTX 4060, 96 real PDF chunks:
 
 | profile | provider | ingest | chunks/sec | query (median) | query (worst) |
@@ -209,16 +205,21 @@ query pays a recompile. A dedicated session doing one repeated query shape hits 
 which is how the micro-benchmark misled: it never changed shape. For an agent-memory
 workload, which searches constantly and ingests occasionally, this is a bad trade.
 
-So `fp16-gpu` exists for bulk one-off ingestion and nothing else. Untested and possibly
-better: the CUDA EP handles dynamic shapes more gracefully than DirectML, and shape
-bucketing would cut the recompiles.
+Halving a once-per-document cost is not worth a 7x regression on the operation that runs
+constantly, so the profile machinery -- second build, batching path, provider fallback,
+profile stamping -- was deleted rather than kept for a workload this library does not
+have. It is recoverable from git history (`c31e69e`) if that ever changes.
 
-**Profiles pair a build with a provider, because the two are not independent.**
-int8 on DirectML is ~5x slower than int8 on CPU, so an earlier version that preferred
-any available GPU for the default int8 build was a straight regression. int8 and fp16
-also disagree at 0.913 cosine, so the profile is stamped in the `meta` table and
-reopening under a different one raises. Within the fp16 build, DML and CPU agree to
-0.99996, so provider choice alone is safe there -- it is the *build* that changes vectors.
+Two things to know before re-adding one:
+
+- **Build and provider are one decision.** int8 on DirectML is ~5x slower than int8 on
+  CPU, so a version that preferred any available GPU for the default int8 build was a
+  straight regression. int8 and fp16 also disagree at 0.913 cosine, meaning a store must
+  be queried under the build that wrote it. Within the fp16 build, DML and CPU agree to
+  0.99996 -- it is the *build* that moves vectors, not the provider.
+- **The CUDA EP is untested here** and handles dynamic shapes better than DirectML, so
+  the query penalty may be a DirectML problem rather than a GPU problem. Shape bucketing
+  would also cut the recompiles. Neither was measured.
 
 **Original note, kept because the fallback machinery still matters:** `pip install
 onnxruntime-directml` (Windows, no CUDA setup) or `onnxruntime-gpu` is picked up with no
