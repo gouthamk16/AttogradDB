@@ -2,7 +2,8 @@
 
 A lightweight, document-oriented vector store for semantic retrieval over plaintext, PDF, and JSON documents. Pure-Python library, published to PyPI as `attogradDB`.
 
-There is one public surface: **`VectorStore`** in `attogradDB/attodb.py`. Add text, search it, scope by project/session/kind, delete what you no longer want.
+There are two public surfaces: **`VectorStore`** in `attogradDB/attodb.py`, and the optional
+`attograddb-mcp` stdio server for project decision memory.
 
 ## Layout
 
@@ -11,6 +12,8 @@ attogradDB/
   attodb.py      VectorStore. SQLite for durability, numpy arrays as the search index.
   embedding.py   QwenEmbedding — Qwen3-Embedding-0.6B via ONNX, last-token pooled (1024-d).
   io.py          TextSplitter — fixed-size character chunking with overlap.
+  memory.py      Structured project decisions with explicit supersession.
+  mcp_server.py  Project-scoped stdio MCP tools for remembering and recalling decisions.
   utils.py       read_pdf() via pypdf.
   tests/         pytest suites; conftest.py provides a stub embedder for the fast ones.
 examples/        quickstart.py — the de-facto integration test.
@@ -25,6 +28,7 @@ sample_data/     PDFs used by the example.
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 python -m pytest attogradDB/tests -v
+attograddb-mcp --project-root /path/to/project
 ```
 
 ## State
@@ -40,6 +44,9 @@ they are:
   `_scopes` are all rebuilt by `_load()`. Scope columns live in memory too — round-tripping
   90k ids through SQL cost 20ms against 0.2ms for a numpy comparison. `_texts()` is the one
   hot-path SQL call, and it only ever fetches the top-k rows.
+- **Active decisions are loaded, not searched.** The MCP server returns every active decision
+  for its configured project. Decisions carry rationale, evidence and explicit supersession;
+  vector similarity is reserved for the larger fact/trace tier.
 
 - **Queries and documents are embedded differently, on purpose.** Qwen3 is trained
   asymmetrically: `embed_query()` prepends an instruction, `embed_document()` does not.
@@ -247,6 +254,12 @@ grant is upstream Qwen's, and the revision is unpinned.
 
 ## Roadmap
 
-The live thread is the **agent-memory layer**: chunk session traces and expose them over
-MCP so an agent can query mid-task. That is the product; this store is plumbing. The
-README roadmap and the local `to-do.txt` hold the rest of the wishlist.
+The first agent-memory slice is implemented: explicit structured decisions in SQLite plus
+`remember_decision` and `recall_decisions` over project-scoped stdio MCP. Generic MCP cannot
+force startup injection, so the server publishes instructions and the host or agent must follow
+them.
+
+Next: extract decision candidates from session traces, retrieve long-tail facts from working
+context rather than only the user query, verify evidence against repository state, and compact
+the active set when it grows too large. The vector store is plumbing for that long tail, not the
+source of truth for active decisions.

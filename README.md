@@ -2,9 +2,11 @@
 
 A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 0.9.1
+Version 1.0.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
+
+Full usage guide: [docs/usage.md](docs/usage.md). Runnable copies: `examples/quickstart.py`, `examples/mcp_memory.py`.
 
 ## Features
 
@@ -14,7 +16,7 @@ Version 0.9.1
 - Plaintext, PDF and JSON ingestion with overlap-aware chunking
 - Exhaustive exact search: no approximate-recall tradeoff
 - Matryoshka dimensions: search at 256-d, keep the full 1024-d on disk
-
+- Project-scoped decision memory over MCP with explicit supersession
 
 ## Installation
 
@@ -22,6 +24,12 @@ Version 0.9.1
 
 ```bash
 pip install attogradDB
+```
+
+Install the optional MCP server with:
+
+```bash
+pip install "attogradDB[mcp]"
 ```
 
 ### Method 2: Clone and build from source
@@ -44,10 +52,6 @@ python -m pytest attogradDB/tests
 
 ## Usage
 
-Examples can be found at `AttogradDB/examples`
-
-## Usage
-
 ```python
 from attogradDB import VectorStore
 
@@ -67,50 +71,7 @@ store.delete(session="2026-08-18")             # forget
 store.close()
 ```
 
-A runnable version is in `examples/quickstart.py`.
-
-## Documentation
-
-### VectorStore
-
--   `__init__(path=None, embedding_model="qwen3", dim=256)` Open a store. `path` is a SQLite file; `None` gives an in-memory store discarded on close. `dim` is the search dimension: full 1024-d vectors are always stored, and the in-memory index is truncated to `dim` (Matryoshka), so you can reopen at a different `dim` without re-embedding. Reopening with a different `embedding_model` is refused, since vectors from different models are not comparable.
-
--   `add(texts, project=None, session=None, kind=None) -> list[int]` Embed and store a string or list of strings. Ids are generated and returned.
-
--   `search(query, top_n=5, project=None, session=None, kind=None) -> list[tuple[int, float, str]]` Return the closest chunks as `(id, score, text)`, best first. Each scope takes a single value or a list of them, so one query can span several projects or sessions. Omitting a scope searches across all of it.
-
-    ```python
-    store.search("why not redis")                              # everything
-    store.search("why not redis", project="payments")          # one project
-    store.search("why not redis", project=["payments", "api"]) # several
-    store.search("what broke", session=["mon", "tue"], kind="note")
-    ```
-
--   `delete(ids=None, project=None, session=None, kind=None) -> int` Delete matching chunks and return how many were removed. Scopes accept a list, matching `search()`. Requires at least one filter, so an empty call cannot wipe the store.
-
--   `similarity(vector_a, vector_b) -> float` Cosine similarity between two vectors.
-
--   `len(store)` Number of stored chunks. `store.close()` closes the database.
-
-### Ingestion
-
--   `TextSplitter(chunk_size=200, chunk_overlap=20)` from `attogradDB.io` — fixed-size character chunking. `split_text(text)` then `get_docs()`.
-
--   `read_pdf(path)` from `attogradDB.utils` — extract text from every page via pypdf.
-
-### Embedding
-
-#### `QwenEmbedding`
-
--   Qwen3-Embedding-0.6B (Apache-2.0) via ONNX Runtime, CPU by default. The model downloads on first embed call (~600MB, int8) and is cached by `huggingface_hub`; opening a store does not trigger it.
-
--   Native output is 1024-d. Queries carry an instruction prefix and documents do not — the model is trained asymmetrically, and the store handles this for you.
-
--   Embeds one text at a time. Batching gives no CPU throughput gain and padding perturbs the result, so it is deliberately not offered.
-
--   Runs on CPU everywhere, including macOS, with no optional accelerator packages. A GPU path was built and measured on an RTX 4060: ingest was 2x faster, but search went from a 34ms median to 238ms (476ms worst) because DirectML recompiles per input shape and real queries vary in length. Since this store searches far more than it ingests, it was removed rather than kept as an option.
-
--   The model is recorded in the store, so reopening it under a different embedding model raises rather than silently returning worse results.
+`add`, `search`, and `delete` take `project` / `session` / `kind` as a value or a list. Decision memory is a separate table in the same file, exposed over MCP (`attograddb-mcp --project-root ...`) as `remember_decision` and `recall_decisions`. Details, PDF ingest, and host setup are in [docs/usage.md](docs/usage.md).
 
 ## Design notes
 
@@ -125,9 +86,11 @@ vectors a scan reaches ~230 ms and that trade changes; `CLAUDE.md` holds the ful
 
 - Add a method for performance logging.
 - LLM based chunking.
-- Tests for lading and saving indexes locally.
 - Adding support for more embedding models and indexing methods.
 - Adding support for more document types (currently we have pdf, json and txt. Need to add support for docx and images).
+- Extract decision candidates from session traces.
+- Retrieve long-tail facts using the agent's working context rather than only the user query.
+- Verify stored evidence against repository state and compact oversized active decision sets.
 
 ## Contributing
 
