@@ -17,6 +17,11 @@ attogradDB/
   utils.py       read_pdf() via pypdf.
   tests/         pytest suites; conftest.py provides a stub embedder for the fast ones.
 examples/        quickstart.py — the de-facto integration test.
+skills/          Shared agent guidance for the native host plugins.
+.claude-plugin/  Claude Code plugin manifest and marketplace metadata.
+.cursor-plugin/  Cursor plugin manifest and marketplace metadata.
+.codex-plugin/   Codex plugin manifest.
+.agents/         Codex repository marketplace metadata.
 sample_data/     PDFs used by the example.
 ```
 
@@ -47,6 +52,10 @@ they are:
 - **Active decisions are loaded, not searched.** The MCP server returns every active decision
   for its configured project. Decisions carry rationale, evidence and explicit supersession;
   vector similarity is reserved for the larger fact/trace tier.
+- **Plugin installation is global; plugin data is project-scoped.** Claude Code, Cursor and
+  Codex manifests use `uvx` to bootstrap the MCP extra and pass the active workspace to the
+  server. Do not make the model provide project or session names to compensate for a missing
+  workspace boundary.
 
 - **Queries and documents are embedded differently, on purpose.** Qwen3 is trained
   asymmetrically: `embed_query()` prepends an instruction, `embed_document()` does not.

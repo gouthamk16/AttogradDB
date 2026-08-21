@@ -1,0 +1,20 @@
+{
+  "name": "attograd-plugins",
+  "plugins": [
+    {
+      "name": "attograd-memory",
+      "source": {
+        "path": "./"
+      },
+      "interface": {
+        "displayName": "AttogradDB Project Memory",
+        "shortDescription": "Remember and recall durable project decisions.",
+        "longDescription": "Adds local project decision memory through AttogradDB and MCP.",
+        "developerName": "Goutham Krishnan",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://github.com/gouthamk16/AttogradDB"
+      }
+    }
+  ]
+}
