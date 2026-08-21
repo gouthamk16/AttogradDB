@@ -1,0 +1,26 @@
+{
+  "name": "attograd-memory",
+  "version": "1.0.0",
+  "description": "Project decision memory for Codex, backed by AttogradDB.",
+  "author": {
+    "name": "Goutham Krishnan",
+    "url": "https://github.com/gouthamk16"
+  },
+  "homepage": "https://github.com/gouthamk16/AttogradDB",
+  "repository": "https://github.com/gouthamk16/AttogradDB",
+  "license": "MIT",
+  "keywords": ["memory", "decisions", "mcp", "attograddb"],
+  "skills": "./skills/",
+  "mcpServers": {
+    "attograd-memory": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "attogradDB[mcp]",
+        "attograddb-mcp",
+        "--project-root",
+        "."
+      ]
+    }
+  }
+}

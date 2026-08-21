@@ -1,0 +1,20 @@
+{
+  "name": "attograd-plugins",
+  "owner": {
+    "name": "Goutham Krishnan",
+    "url": "https://github.com/gouthamk16"
+  },
+  "metadata": {
+    "description": "AttogradDB plugins for agent project memory"
+  },
+  "plugins": [
+    {
+      "name": "attograd-memory",
+      "source": "./",
+      "description": "Project decision memory for Claude Code, backed by AttogradDB.",
+      "version": "1.0.0",
+      "category": "Productivity",
+      "tags": ["memory", "decisions", "mcp"]
+    }
+  ]
+}

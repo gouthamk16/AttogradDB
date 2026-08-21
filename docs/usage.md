@@ -143,7 +143,7 @@ Generic MCP host config:
 }
 ```
 
-### Use with Claude Code or Cursor
+### Install once as a host plugin
 
 Choose the integration based on what you want AttogradDB to do:
 
@@ -154,62 +154,120 @@ Choose the integration based on what you want AttogradDB to do:
 - Use **both** when the agent needs structured decisions plus vector search. Point both at the
   same SQLite path if they should share one database.
 
-Install the MCP extra in the Python environment that will launch the server:
+The native plugin is the recommended setup when Claude Code, Cursor, or Codex should use
+AttogradDB. Install it once at the host's global/user scope; the host still launches one
+workspace-aware server for each project. Each project therefore keeps its own
+`.attograd-memory.db` without asking the model to supply a project name or session name.
+
+The plugin uses `uvx` to install the MCP extra on first launch, so install `uv` first:
+
+See the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) for
+Windows, macOS, and Linux. You do not need to install AttogradDB separately when using the
+plugin.
 
 ```bash
-python -m pip install "attogradDB[mcp]"
+uv --version
 ```
-
-The `attograddb-mcp` command must be available to the host. If AttogradDB is installed in a
-virtual environment, use that environment's executable path in the host configuration, or
-activate the environment before starting the host. On Windows that executable is usually
-`.venv\Scripts\attograddb-mcp.exe`; on macOS and Linux it is usually `.venv/bin/attograddb-mcp`.
 
 #### Claude Code
 
-From the project directory, add a project-scoped server:
+Add the AttogradDB marketplace once, then install the plugin globally:
 
 ```bash
-claude mcp add --scope project attograd-memory -- attograddb-mcp --project-root /absolute/path/to/project
+/plugin marketplace add gouthamk16/AttogradDB
+/plugin install attograd-memory@attograd-plugins
 ```
 
-Replace `/absolute/path/to/project` with the directory Claude Code is working on. On Windows,
-use a full path such as `C:\Users\you\src\my-project`. The `--` is required: options before it
-belong to Claude Code, and everything after it is the command used to start AttogradDB.
+Choose the global/user installation scope when Claude Code prompts for it. The plugin passes
+Claude Code's active project directory to the server automatically. Run `/mcp` to confirm the
+server is connected, then start a new session. The bundled skill tells Claude to recall before
+planning and to write durable decisions explicitly.
 
-`--scope project` stores the server in `.mcp.json` at the repository root, so it can be shared
-with the project. Review that file before committing it. If you want the server only for yourself
-in the current project, omit `--scope project` and use Claude Code's default local scope. Avoid
-the user/global scope for this server unless you intentionally want one fixed project root
-available in every project.
+The repository includes the Claude marketplace manifest, so the commands above can be used
+before a public marketplace listing is approved. After a listing is available, users can install
+the plugin directly from the Claude Code plugin marketplace.
 
-Run `claude mcp list` to check the registration, then start a new Claude Code session. Ask Claude
-to recall the active decisions before planning, or explicitly say:
+If you prefer a manual setup instead of a plugin, run this from a Claude Code session:
 
-```text
-Before making a plan, call recall_decisions and use the active project decisions as constraints.
+```bash
+claude mcp add --scope user attograd-memory -- uvx --from "attogradDB[mcp]" attograddb-mcp --project-root /absolute/path/to/project
 ```
+
+Replace the project path and use a narrower scope when appropriate. Manual setup does not
+automatically change the project path as you move between repositories.
 
 #### Cursor
 
-For a project-specific setup, create `.cursor/mcp.json` in the repository root:
+Open **Customize** in Cursor, find the AttogradDB plugin in the Marketplace, and choose a
+global/user installation scope. Cursor passes the active workspace directory to the bundled
+server, so switching repositories selects the corresponding decision database automatically.
+Confirm that `attograd-memory` is enabled in Cursor's MCP settings, then start a new Agent task.
+The repository includes `.cursor-plugin/plugin.json` and marketplace metadata for submission or
+local plugin testing; until it is listed publicly, use Cursor's local plugin/repository option.
+
+If you prefer a direct MCP configuration instead of the plugin, create `.cursor/mcp.json` in a
+project:
 
 ```json
 {
   "mcpServers": {
     "attograd-memory": {
       "type": "stdio",
-      "command": "attograddb-mcp",
-      "args": ["--project-root", "${workspaceFolder}"]
+      "command": "uvx",
+      "args": [
+        "--from",
+        "attogradDB[mcp]",
+        "attograddb-mcp",
+        "--project-root",
+        "${workspaceFolder}"
+      ]
     }
   }
 }
 ```
 
-If Cursor cannot find the command because it was installed in a virtual environment, replace
-`command` with the executable path, for example
-`.venv\\Scripts\\attograddb-mcp.exe` on Windows or `.venv/bin/attograddb-mcp` on macOS/Linux.
-Alternatively configure the Python interpreter that contains the installed package and use:
+#### Codex
+
+Open Codex's Plugins directory and install **AttogradDB Project Memory** at the global/user
+scope. Codex's plugin manifest is `.codex-plugin/plugin.json`; its bundled MCP server uses the
+active working directory as the project root. The plugin is available through Codex's supported
+plugin surfaces, and the resulting MCP configuration can also be used by Codex clients that
+share the host configuration.
+
+For local testing, the repository includes `.agents/plugins/marketplace.json`. Add that
+repository marketplace in Codex, install `attograd-memory`, and start a new Codex session.
+Review the plugin's MCP entry in Codex settings if the server is disabled by policy.
+
+If you prefer direct Codex configuration, add this to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.attograd-memory]
+command = "uvx"
+args = ["--from", "attogradDB[mcp]", "attograddb-mcp", "--project-root", "."]
+```
+
+For a trusted project-only configuration, put the same entry in `.codex/config.toml` instead.
+
+#### What the plugin does
+
+After installation, the host starts the same stdio MCP server for the active workspace:
+
+```text
+host plugin -> uvx -> attograddb-mcp --project-root active-workspace
+                         -> active-workspace/.attograd-memory.db
+```
+
+The bundled skill improves the model's behavior:
+
+1. Call `recall_decisions` before planning or editing.
+2. Treat returned decisions as constraints.
+3. Call `remember_decision` for durable choices.
+4. Pass `supersedes` when replacing an active decision.
+
+Skills and server instructions guide the model but cannot force a generic host to make a tool
+call. For critical workflows, keep the same requirement in your team/project instructions.
+
+The direct Cursor configuration equivalent using an already-installed Python environment is:
 
 ```json
 {
@@ -223,11 +281,8 @@ Alternatively configure the Python interpreter that contains the installed packa
 }
 ```
 
-Open Cursor's MCP settings and confirm `attograd-memory` is enabled. Project configuration is
-appropriate when each repository needs its own decision database. A global `~/.cursor/mcp.json`
-configuration is appropriate only when you deliberately want the same server entry in every
-project; the required `--project-root` still determines which project's decisions are opened.
-Ask Cursor Agent to call `recall_decisions` before planning or editing.
+For the Python API only, install `attogradDB` without the MCP extra and use `VectorStore`
+directly; no host plugin or `uv` is needed.
 
 ### Tools
 

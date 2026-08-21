@@ -6,7 +6,9 @@ Version 1.0.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
-Full usage guide: [docs/usage.md](docs/usage.md). Runnable copies: `examples/quickstart.py`, `examples/mcp_memory.py`.
+Full usage guide: [docs/usage.md](docs/usage.md), including one-time global plugin installation
+for Claude Code, Cursor, and Codex. Runnable copies: `examples/quickstart.py`,
+`examples/mcp_memory.py`.
 
 ## Features
 
