@@ -143,6 +143,92 @@ Generic MCP host config:
 }
 ```
 
+### Use with Claude Code or Cursor
+
+Choose the integration based on what you want AttogradDB to do:
+
+- Use the **MCP server** when Claude Code or Cursor should remember project decisions such as
+  architecture constraints, rejected approaches, or operational rules.
+- Use the **Python API** when your application or scripts need document ingestion and semantic
+  search over PDFs, text, JSON, facts, or traces.
+- Use **both** when the agent needs structured decisions plus vector search. Point both at the
+  same SQLite path if they should share one database.
+
+Install the MCP extra in the Python environment that will launch the server:
+
+```bash
+python -m pip install "attogradDB[mcp]"
+```
+
+The `attograddb-mcp` command must be available to the host. If AttogradDB is installed in a
+virtual environment, use that environment's executable path in the host configuration, or
+activate the environment before starting the host. On Windows that executable is usually
+`.venv\Scripts\attograddb-mcp.exe`; on macOS and Linux it is usually `.venv/bin/attograddb-mcp`.
+
+#### Claude Code
+
+From the project directory, add a project-scoped server:
+
+```bash
+claude mcp add --scope project attograd-memory -- attograddb-mcp --project-root /absolute/path/to/project
+```
+
+Replace `/absolute/path/to/project` with the directory Claude Code is working on. On Windows,
+use a full path such as `C:\Users\you\src\my-project`. The `--` is required: options before it
+belong to Claude Code, and everything after it is the command used to start AttogradDB.
+
+`--scope project` stores the server in `.mcp.json` at the repository root, so it can be shared
+with the project. Review that file before committing it. If you want the server only for yourself
+in the current project, omit `--scope project` and use Claude Code's default local scope. Avoid
+the user/global scope for this server unless you intentionally want one fixed project root
+available in every project.
+
+Run `claude mcp list` to check the registration, then start a new Claude Code session. Ask Claude
+to recall the active decisions before planning, or explicitly say:
+
+```text
+Before making a plan, call recall_decisions and use the active project decisions as constraints.
+```
+
+#### Cursor
+
+For a project-specific setup, create `.cursor/mcp.json` in the repository root:
+
+```json
+{
+  "mcpServers": {
+    "attograd-memory": {
+      "type": "stdio",
+      "command": "attograddb-mcp",
+      "args": ["--project-root", "${workspaceFolder}"]
+    }
+  }
+}
+```
+
+If Cursor cannot find the command because it was installed in a virtual environment, replace
+`command` with the executable path, for example
+`.venv\\Scripts\\attograddb-mcp.exe` on Windows or `.venv/bin/attograddb-mcp` on macOS/Linux.
+Alternatively configure the Python interpreter that contains the installed package and use:
+
+```json
+{
+  "mcpServers": {
+    "attograd-memory": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "attogradDB.mcp_server", "--project-root", "${workspaceFolder}"]
+    }
+  }
+}
+```
+
+Open Cursor's MCP settings and confirm `attograd-memory` is enabled. Project configuration is
+appropriate when each repository needs its own decision database. A global `~/.cursor/mcp.json`
+configuration is appropriate only when you deliberately want the same server entry in every
+project; the required `--project-root` still determines which project's decisions are opened.
+Ask Cursor Agent to call `recall_decisions` before planning or editing.
+
 ### Tools
 
 - `recall_decisions()` — every active decision for this project, in insertion order.

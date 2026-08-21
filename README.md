@@ -71,7 +71,7 @@ store.delete(session="2026-08-18")             # forget
 store.close()
 ```
 
-`add`, `search`, and `delete` take `project` / `session` / `kind` as a value or a list. Decision memory is a separate table in the same file, exposed over MCP (`attograddb-mcp --project-root ...`) as `remember_decision` and `recall_decisions`. Details, PDF ingest, and host setup are in [docs/usage.md](docs/usage.md).
+`add`, `search`, and `delete` take `project` / `session` / `kind` as a value or a list. Decision memory is a separate table in the same file, exposed over MCP (`attograddb-mcp --project-root ...`) as `remember_decision` and `recall_decisions`. The [usage guide](docs/usage.md) includes PDF ingest and setup for Claude Code and Cursor.
 
 ## Design notes
 
