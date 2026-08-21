@@ -1,0 +1,200 @@
+// Riverfront-style polish on top of just-the-docs dark scheme.
+
+$display-font: "Jost", "Century Gothic", "IBM Plex Sans", sans-serif;
+
+::selection {
+  color: #111111;
+  background: rgba(237, 237, 236, 0.85);
+}
+
+// --- Display typography -----------------------------------------------------
+
+.site-title {
+  font-family: $display-font !important;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #ededec !important;
+}
+
+h1,
+h2,
+h3 {
+  font-family: $display-font;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-weight: 300;
+}
+
+h2,
+h3 {
+  font-weight: 400;
+}
+
+.main-content {
+  h2 {
+    margin-top: 2.2rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid #1f1f1f;
+  }
+}
+
+// --- Hero --------------------------------------------------------------------
+
+.attograd-hero {
+  margin: 0.5rem 0 2.75rem;
+}
+
+.attograd-eyebrow {
+  font-family: $mono-font-family;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #7c7f7c;
+  margin-bottom: 1rem;
+}
+
+.attograd-tagline {
+  font-family: $display-font;
+  font-weight: 300;
+  text-transform: lowercase;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+  color: #ededec;
+  margin: 0 0 1.1rem;
+}
+
+.attograd-sub {
+  max-width: 46ch;
+  color: #90928f;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0 0 1.75rem;
+}
+
+// --- Buttons -----------------------------------------------------------------
+
+.btn {
+  font-family: $mono-font-family;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  border-radius: 999px;
+  padding: 0.5rem 1.15rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ededec;
+  box-shadow: none;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow: none;
+    transform: translateY(-1px);
+  }
+}
+
+.btn-primary {
+  background: #ededec !important;
+  border-color: #ededec !important;
+  color: #111111 !important;
+
+  &:hover {
+    background: #ffffff !important;
+    border-color: #ffffff !important;
+  }
+}
+
+// --- Code --------------------------------------------------------------------
+
+.main-content {
+  div.highlighter-rouge,
+  figure.highlight,
+  pre.highlight {
+    border: 1px solid #242424;
+    border-radius: 14px;
+  }
+
+  div.highlighter-rouge,
+  figure.highlight {
+    background: #161616;
+  }
+
+  pre.highlight {
+    padding: 0.9rem 1rem;
+  }
+
+  code {
+    font-size: 0.86em;
+  }
+
+  // inline code
+  p > code,
+  li > code,
+  td > code,
+  a > code {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid #242424;
+    border-radius: 6px;
+    color: #ededec;
+    padding: 0.12em 0.4em;
+  }
+}
+
+// --- Tables ------------------------------------------------------------------
+
+.main-content table {
+  border: 1px solid #242424;
+  border-radius: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+
+  th,
+  td {
+    border: none;
+    border-bottom: 1px solid #1f1f1f;
+    background: transparent;
+  }
+
+  thead th {
+    font-family: $mono-font-family;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #90928f;
+    background: #151515;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// --- Links, rules, chrome ----------------------------------------------------
+
+.main-content a {
+  text-underline-offset: 0.15em;
+}
+
+.main-content hr {
+  border: 0;
+  border-top: 1px solid #1f1f1f;
+}
+
+.search-input {
+  border-radius: 10px;
+  background: #161616;
+}
+
+.side-bar {
+  border-right: 1px solid #1c1c1c;
+}
+
+blockquote {
+  border-left: 2px solid #333;
+  color: #90928f;
+}

@@ -18,7 +18,7 @@ tool contract.
 Generic command:
 
 ```bash
-uvx --from "attogradDB[mcp]==1.0.1" attograddb-mcp --project-root /path/to/project
+uvx --from "attogradDB[mcp]==1.0.2" attograddb-mcp --project-root /path/to/project
 ```
 
 If the host starts the server with the project as its working directory, `.` is a
@@ -41,7 +41,7 @@ on the model's tool list.
         "command": [
           "uvx",
           "--from",
-          "attogradDB[mcp]==1.0.1",
+          "attogradDB[mcp]==1.0.2",
           "attograddb-mcp",
           "--project-root",
           "."
@@ -64,7 +64,7 @@ mcp_servers:
     command: uvx
     args:
       - --from
-      - attogradDB[mcp]==1.0.1
+      - attogradDB[mcp]==1.0.2
       - attograddb-mcp
       - --project-root
       - .
@@ -86,7 +86,7 @@ Put the standard MCP map in `~/.pi/agent/mcp.json` (user-global) or `.mcp.json`
       "command": "uvx",
       "args": [
         "--from",
-        "attogradDB[mcp]==1.0.1",
+        "attogradDB[mcp]==1.0.2",
         "attograddb-mcp",
         "--project-root",
         "."
@@ -108,7 +108,7 @@ Shape the host expects is usually one of:
   "command": "uvx",
   "args": [
     "--from",
-    "attogradDB[mcp]==1.0.1",
+    "attogradDB[mcp]==1.0.2",
     "attograddb-mcp",
     "--project-root",
     "/path/to/project"
@@ -123,7 +123,7 @@ or a single argv array:
   "command": [
     "uvx",
     "--from",
-    "attogradDB[mcp]==1.0.1",
+    "attogradDB[mcp]==1.0.2",
     "attograddb-mcp",
     "--project-root",
     "/path/to/project"
