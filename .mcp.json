@@ -1,0 +1,14 @@
+{
+  "mcp_servers": {
+    "attograd-memory": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "attogradDB[mcp]==1.0.1",
+        "attograddb-mcp",
+        "--project-root",
+        "."
+      ]
+    }
+  }
+}

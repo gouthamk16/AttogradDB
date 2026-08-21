@@ -2,7 +2,7 @@
 
 A lightweight, local-first vector store for semantic retrieval. One SQLite file, no server, no index to maintain. Built for scoped retrieval -- search one project or one session without the rest bleeding in.
 
-Version 1.0.0
+Version 1.0.1
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 

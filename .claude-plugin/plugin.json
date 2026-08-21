@@ -1,6 +1,6 @@
 {
   "name": "attograd-memory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Project decision memory for Claude Code, backed by AttogradDB.",
   "author": {
     "name": "Goutham Krishnan",
@@ -16,7 +16,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "attogradDB[mcp]==1.0.0",
+        "attogradDB[mcp]==1.0.1",
         "attograddb-mcp",
         "--project-root",
         "${CLAUDE_PROJECT_DIR}"

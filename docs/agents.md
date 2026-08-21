@@ -15,7 +15,7 @@ Install the plugin **once** at the host's global/user scope. The host still laun
 workspace-aware server for each project. Each project keeps its own `.attograd-memory.db`.
 The model does not supply a project or session name.
 
-The plugin uses `uvx` to install `attogradDB[mcp]==1.0.0` on first launch. Install
+The plugin uses `uvx` to install `attogradDB[mcp]==1.0.1` on first launch. Install
 [uv](https://docs.astral.sh/uv/getting-started/installation/) first. You do not need a
 separate `pip install` when using the plugin or the `uvx` manual commands below.
 
@@ -55,7 +55,7 @@ publicly. After a listing exists, install from the Claude Code plugin marketplac
 ### Manual MCP (same tools)
 
 ```bash
-claude mcp add --scope user attograd-memory -- uvx --from "attogradDB[mcp]==1.0.0" attograddb-mcp --project-root /absolute/path/to/project
+claude mcp add --scope user attograd-memory -- uvx --from "attogradDB[mcp]==1.0.1" attograddb-mcp --project-root /absolute/path/to/project
 ```
 
 Replace the project path. Manual setup does not automatically change the project path as you
@@ -83,7 +83,7 @@ global install that still opens the active workspace's database:
       "command": "uvx",
       "args": [
         "--from",
-        "attogradDB[mcp]==1.0.0",
+        "attogradDB[mcp]==1.0.1",
         "attograddb-mcp",
         "--project-root",
         "${workspaceFolder}"
@@ -120,7 +120,7 @@ global/user scope. The bundled server uses the active working directory as `--pr
 ```toml
 [mcp_servers.attograd-memory]
 command = "uvx"
-args = ["--from", "attogradDB[mcp]==1.0.0", "attograddb-mcp", "--project-root", "."]
+args = ["--from", "attogradDB[mcp]==1.0.1", "attograddb-mcp", "--project-root", "."]
 ```
 
 For a trusted project-only configuration, put the same entry in `.codex/config.toml`.

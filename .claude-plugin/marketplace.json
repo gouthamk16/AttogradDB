@@ -12,7 +12,7 @@
       "name": "attograd-memory",
       "source": "./",
       "description": "Project decision memory for Claude Code, backed by AttogradDB.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "category": "Productivity",
       "tags": ["memory", "decisions", "mcp"]
     }

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "attogradDB"
-version = "1.0.0"
+version = "1.0.1"
 description = "A lightweight, local-first vector store for scoped semantic retrieval"
 readme = "README.md"
 license = { text = "MIT" }
