@@ -6,8 +6,9 @@ Version 1.0.0
 
 [![PyPI Downloads](https://static.pepy.tech/badge/attograddb)](https://pepy.tech/projects/attograddb)
 
-Full usage guide: [docs/usage.md](docs/usage.md), including one-time global plugin installation
-for Claude Code, Cursor, and Codex. Runnable copies: `examples/quickstart.py`,
+Docs: [https://gouthamk16.github.io/AttogradDB/](https://gouthamk16.github.io/AttogradDB/)
+([source](docs/index.md)). Python API, plus Claude Code / Cursor / Codex plugins
+and the equivalent manual MCP setup. Runnable copies: `examples/quickstart.py`,
 `examples/mcp_memory.py`.
 
 ## Features
@@ -73,7 +74,7 @@ store.delete(session="2026-08-18")             # forget
 store.close()
 ```
 
-`add`, `search`, and `delete` take `project` / `session` / `kind` as a value or a list. Decision memory is a separate table in the same file, exposed over MCP (`attograddb-mcp --project-root ...`) as `remember_decision` and `recall_decisions`. The [usage guide](docs/usage.md) includes PDF ingest and setup for Claude Code and Cursor.
+`add`, `search`, and `delete` take `project` / `session` / `kind` as a value or a list. Decision memory is a separate table in the same file, exposed over MCP (`attograddb-mcp --project-root ...`) as `remember_decision` and `recall_decisions`. Full docs: [Python API](docs/usage.md), [agent plugins and manual MCP](docs/agents.md).
 
 ## Design notes
 
