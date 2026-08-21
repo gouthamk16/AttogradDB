@@ -29,11 +29,13 @@ A public listing in Claude Code, Cursor, or Codex is not required. Users get the
 and the same database layout from any of:
 
 1. **This GitHub repository as a plugin source** — the manifests in the repo.
-2. **Manual MCP configuration** — `claude mcp add`, `.cursor/mcp.json`, or Codex `config.toml`.
+2. **Manual MCP configuration** — host-specific files, or the generic stdio command.
 3. **A later marketplace install** — same server, same tools, once the listing is approved.
 
 Prefer the plugin when the host can load it. Use the manual MCP config when you want an
-explicit command line or the marketplace UI is not available yet.
+explicit command line or the marketplace UI is not available yet. OpenCode, Hermes, Pi, and
+other stdio clients are documented in [Other harnesses](other-harnesses.md). How listings
+get submitted is in [Marketplace listings](marketplace.md).
 
 ## Claude Code
 
@@ -132,7 +134,8 @@ host plugin or MCP config
         → active-workspace/.attograd-memory.db
 ```
 
-You can also run the server yourself:
+Generic MCP host config is in [Other harnesses](other-harnesses.md). You can also run the
+server yourself:
 
 ```bash
 attograddb-mcp --project-root /path/to/project
@@ -140,15 +143,6 @@ attograddb-mcp --project-root /path/to/project
 
 The default database is `/path/to/project/.attograd-memory.db`. Pass `--db` to put it
 elsewhere. The project name is the directory name of `--project-root`.
-
-Generic MCP host config (any client that speaks stdio MCP):
-
-```json
-{
-  "command": "attograddb-mcp",
-  "args": ["--project-root", "/path/to/project"]
-}
-```
 
 ## Tools
 

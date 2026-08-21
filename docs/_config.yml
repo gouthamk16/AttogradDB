@@ -18,3 +18,6 @@ aux_links:
   PyPI:
     - https://pypi.org/project/attogradDB/
 aux_links_new_tab: true
+
+exclude:
+  - README.md
