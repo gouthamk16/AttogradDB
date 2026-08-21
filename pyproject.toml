@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "attogradDB"
-version = "0.9.1"
+version = "1.0.0"
 description = "A lightweight, local-first vector store for scoped semantic retrieval"
 readme = "README.md"
 license = { text = "MIT" }
@@ -20,6 +20,7 @@ dependencies = [
 classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
@@ -27,8 +28,12 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/gouthamk16/AttogradDB"
 
+[project.scripts]
+attograddb-mcp = "attogradDB.mcp_server:main"
+
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "build", "twine"]
+mcp = ["mcp>=2,<3"]
+dev = ["pytest", "ruff", "build", "twine", "mcp>=2,<3"]
 
 [tool.setuptools.packages.find]
 include = ["attogradDB*"]
