@@ -5,7 +5,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "attogradDB[mcp]==1.0.1",
+        "attogradDB[mcp]==1.0.2",
         "attograddb-mcp",
         "--project-root",
         "${workspaceFolder}"

@@ -1,5 +1,5 @@
 title: AttogradDB
-description: A lightweight, local-first vector store for scoped semantic retrieval
+description: Light speed memory for your agents — a local-first vector store and MCP decision memory
 remote_theme: just-the-docs/just-the-docs@v0.10.1
 plugins:
   - jekyll-remote-theme
@@ -10,7 +10,7 @@ baseurl: /AttogradDB
 
 search_enabled: true
 heading_anchors: true
-color_scheme: light
+color_scheme: attograd
 
 aux_links:
   GitHub:

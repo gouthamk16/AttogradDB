@@ -11,21 +11,20 @@ approved, install from this GitHub repository or with a direct MCP config. The
 tools and the per-project database are the same. See [Agent plugins](agents.md)
 and [Other harnesses](other-harnesses.md).
 
-Public listings require a **merged, public `main`** with the plugin manifests
-already in the repo. Submit after PR #1 lands.
+The manifests are already on a public `main`, so every submission below can be
+made now. Each host's "until approval" fallback keeps working in the meantime.
 
 ## Claude Code / Claude Cowork
 
 Third-party plugins go to the **community** marketplace
 (`anthropics/claude-plugins-community`), not Anthropic's official catalog.
 
-1. Merge the plugin manifests to `main`.
-2. Validate locally: `claude plugin validate .`
-3. Submit the public GitHub URL (`https://github.com/gouthamk16/AttogradDB`) at
+1. Validate locally: `claude plugin validate .`
+2. Submit the public GitHub URL (`https://github.com/gouthamk16/AttogradDB`) at
    [claude.ai plugin submissions](https://claude.ai/admin-settings/directory/submissions/plugins/new)
    or the [console form](https://platform.claude.com/plugins/submit).
    Shortcut: [clau.de/plugin-directory-submission](https://clau.de/plugin-directory-submission).
-4. Anthropic runs automated review. Approved plugins are pinned by commit SHA and
+3. Anthropic runs automated review. Approved plugins are pinned by commit SHA and
    synced into the community catalog (often overnight).
 
 Until that lands, users install from this repo:
@@ -47,10 +46,9 @@ list separately.
 
 ## Cursor
 
-1. Merge to `main`.
-2. Submit the public repo at [cursor.directory/plugins/new](https://cursor.directory/plugins/new)
+1. Submit the public repo at [cursor.directory/plugins/new](https://cursor.directory/plugins/new)
    (community directory; this is the current listing path).
-3. Optionally also use [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish)
+2. Optionally also use [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish)
    while signed into Cursor. First-party Marketplace review is slower and often
    reserved for company integrations.
 

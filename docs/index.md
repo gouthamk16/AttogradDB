@@ -1,50 +1,47 @@
 ---
 title: Home
 nav_order: 1
-description: AttogradDB documentation — install, Python API, and agent plugins
+description: Light speed memory for your agents — a local-first vector store and MCP decision memory
 ---
 
-# AttogradDB
-
-A lightweight, local-first vector store. One SQLite file, no server, no index to maintain.
-Search one project or one session without the rest bleeding in. Optional MCP tools remember
-and recall durable project decisions.
-
-Version 1.0.1
+<div class="attograd-hero" markdown="0">
+  <p class="attograd-eyebrow">AttogradDB · v1.0.2</p>
+  <h1 class="attograd-tagline">Light speed memory for your agents</h1>
+  <p class="attograd-sub">A local-first vector store in one SQLite file. No server, no index to tune. Search one project or one session without the rest bleeding in — and give Claude Code, Cursor, or Codex durable project memory over MCP.</p>
+</div>
 
 [Python usage](usage.md){: .btn .btn-primary .mr-2 }
-[Agent plugins](agents.md){: .btn .btn-outline }
-[Other harnesses](other-harnesses.md){: .btn .btn-outline }
-[GitHub](https://github.com/gouthamk16/AttogradDB){: .btn .btn-outline }
+[Agent plugins](agents.md){: .btn .mr-2 }
+[GitHub](https://github.com/gouthamk16/AttogradDB){: .btn }
 
-## Install the library
+## Install
 
 ```bash
 pip install attogradDB
 ```
 
-Decision memory over MCP:
+Add the MCP decision-memory server:
 
 ```bash
 pip install "attogradDB[mcp]"
 ```
 
-Or let a host plugin bootstrap that extra with `uvx`. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
+Host plugins bootstrap that extra for you with `uvx` — install [uv](https://docs.astral.sh/uv/getting-started/installation/) and skip the manual `pip`.
 
-## Choose a path
+## Where to go next
 
-| Goal | Path |
+| You want to… | Go to |
 | --- | --- |
 | Ingest documents and search them from Python | [Python usage](usage.md) |
-| Let Claude Code, Cursor, or Codex remember project decisions | [Agent plugins](agents.md) |
-| Use OpenCode, Hermes, Pi, or another MCP host | [Other harnesses](other-harnesses.md) |
-| Both | Point the Python store and the MCP server at the same SQLite file |
+| Give Claude Code, Cursor, or Codex project memory | [Agent plugins](agents.md) |
+| Wire up OpenCode, Hermes, Pi, or any stdio MCP host | [Other harnesses](other-harnesses.md) |
+| Get AttogradDB listed in a plugin marketplace | [Marketplace listings](marketplace.md) |
 
-## Plugins and manual install
+## Two tools, one database
 
-You can use AttogradDB with Claude Code, Cursor, or Codex **without waiting for a public marketplace listing**. The plugin in this repository and a direct MCP config expose the same two tools:
+The agent surface is deliberately small. Both tools operate on a per-project `.attograd-memory.db`, and the model never supplies a project or session name — the host passes the active workspace.
 
-- `recall_decisions`
-- `remember_decision`
+- **`recall_decisions`** — every active decision for this project, in order. Call it before planning or editing.
+- **`remember_decision`** — record a durable choice, with an explicit `supersedes` when it replaces an older one.
 
-Until those marketplaces list AttogradDB, install from the GitHub repo or add the MCP server by hand. The experience is the same: a global install, a workspace-aware server, and a per-project `.attograd-memory.db`. See [Agent plugins](agents.md), [Other harnesses](other-harnesses.md), and [Marketplace listings](marketplace.md).
+Install the plugin once at the host's global scope, or add a direct MCP config. Either way you get the same tools and the same database layout — no public marketplace listing required.

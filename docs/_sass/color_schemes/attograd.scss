@@ -1,0 +1,21 @@
+// Dark scheme tuned to the Riverfront AI Labs palette.
+$color-scheme: dark;
+
+$body-background-color: #111111; // --ground
+$sidebar-color: #0d0d0d;
+$search-background-color: #161616;
+$table-background-color: #151515; // --ground-2
+$code-background-color: #161616;
+
+$body-heading-color: #ededec; // --text
+$body-text-color: #c7c9c5;
+$nav-child-link-color: #90928f; // --text-2
+$link-color: #ededec;
+$btn-primary-color: #ededec;
+$base-button-color: #1b1b1b;
+
+$border-color: #242424; // ~ white 10% over --ground
+$search-result-preview-color: #7c7f7c; // --text-3
+$feedback-color: #0d0d0d;
+
+@import "./vendor/OneDarkJekyll/syntax"; // dark code highlighting
