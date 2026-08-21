@@ -14,6 +14,7 @@ Version 1.0.0
 
 [Python usage](usage.md){: .btn .btn-primary .mr-2 }
 [Agent plugins](agents.md){: .btn .btn-outline }
+[Other harnesses](other-harnesses.md){: .btn .btn-outline }
 [GitHub](https://github.com/gouthamk16/AttogradDB){: .btn .btn-outline }
 
 ## Install the library
@@ -36,6 +37,7 @@ Or let a host plugin bootstrap that extra with `uvx`. Install [uv](https://docs.
 | --- | --- |
 | Ingest documents and search them from Python | [Python usage](usage.md) |
 | Let Claude Code, Cursor, or Codex remember project decisions | [Agent plugins](agents.md) |
+| Use OpenCode, Hermes, Pi, or another MCP host | [Other harnesses](other-harnesses.md) |
 | Both | Point the Python store and the MCP server at the same SQLite file |
 
 ## Plugins and manual install
@@ -45,4 +47,4 @@ You can use AttogradDB with Claude Code, Cursor, or Codex **without waiting for 
 - `recall_decisions`
 - `remember_decision`
 
-Until those marketplaces list AttogradDB, install from the GitHub repo or add the MCP server by hand. The experience is the same: a global install, a workspace-aware server, and a per-project `.attograd-memory.db`. See [Agent plugins](agents.md).
+Until those marketplaces list AttogradDB, install from the GitHub repo or add the MCP server by hand. The experience is the same: a global install, a workspace-aware server, and a per-project `.attograd-memory.db`. See [Agent plugins](agents.md), [Other harnesses](other-harnesses.md), and [Marketplace listings](marketplace.md).

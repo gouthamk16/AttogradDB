@@ -16,7 +16,7 @@ attogradDB/
   mcp_server.py  Project-scoped stdio MCP tools for remembering and recalling decisions.
   utils.py       read_pdf() via pypdf.
   tests/         pytest suites; conftest.py provides a stub embedder for the fast ones.
-docs/            GitHub Pages site (Just the Docs). Source for gouthamk16.github.io/AttogradDB.
+docs/            Jekyll source for GitHub Pages (https://gouthamk16.github.io/AttogradDB/). Not a second user guide.
 examples/        quickstart.py — the de-facto integration test.
 skills/          Shared agent guidance for the native host plugins.
 .claude-plugin/  Claude Code plugin manifest and marketplace metadata.
