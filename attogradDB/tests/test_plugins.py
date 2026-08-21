@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).parents[2]
-PIN = "attogradDB[mcp]==1.0.2"
+PIN = "attogradDB[mcp]==1.1.0"
 
 
 def _load(path: str) -> dict:
@@ -19,7 +19,7 @@ def test_claude_plugin_declares_inline_mcp_server() -> None:
     server = manifest["mcpServers"]["attograd-memory"]
 
     assert manifest["name"] == "attograd-memory"
-    assert manifest["version"] == "1.0.2"
+    assert manifest["version"] == "1.1.0"
     assert manifest["skills"] == "./skills/"
     assert server["command"] == "uvx"
     assert server["args"] == _expected_args("${CLAUDE_PROJECT_DIR}")
@@ -31,7 +31,7 @@ def test_cursor_plugin_discovers_mcp_json() -> None:
     server = _load("mcp.json")["mcpServers"]["attograd-memory"]
 
     assert manifest["name"] == "attograd-memory"
-    assert manifest["version"] == "1.0.2"
+    assert manifest["version"] == "1.1.0"
     assert manifest["skills"] == "./skills/"
     assert manifest["mcpServers"] == "mcp.json"
     assert server["command"] == "uvx"
@@ -44,7 +44,7 @@ def test_codex_plugin_points_at_dot_mcp_json() -> None:
     server = _load(".mcp.json")["mcp_servers"]["attograd-memory"]
 
     assert manifest["name"] == "attograd-memory"
-    assert manifest["version"] == "1.0.2"
+    assert manifest["version"] == "1.1.0"
     assert manifest["skills"] == "./skills/"
     assert manifest["mcpServers"] == "./.mcp.json"
     assert manifest["interface"]["displayName"]

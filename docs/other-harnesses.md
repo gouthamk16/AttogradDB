@@ -1,83 +1,95 @@
 ---
-title: Other harnesses
+title: Every other tool
 nav_order: 4
-description: Use AttogradDB from OpenCode, Hermes, Pi, or any stdio MCP client
+description: One command sets up AttogradDB memory for Codex, Gemini CLI, OpenCode, and any MCP host
 ---
 
-# Other harnesses
+# Every other tool
 
-Any host that can launch a local stdio MCP server can use AttogradDB. There is no
-Hermes, OpenCode, or Pi plugin listing. Install [uv](https://docs.astral.sh/uv/getting-started/installation/),
-then point the host at `uvx`. The server still takes `--project-root` so each
-workspace gets its own `.attograd-memory.db`.
+Cursor and Claude Code have a [plugin](agents.md). For everything else — Codex, Gemini CLI,
+OpenCode, and any other MCP host — one command does the whole setup for you.
 
-The tools are the same everywhere: `recall_decisions` and `remember_decision`.
-Call recall before planning or editing. See [Agent plugins](agents.md) for the
-tool contract.
-
-Generic command:
+## Two steps
 
 ```bash
-uvx --from "attogradDB[mcp]==1.0.2" attograddb-mcp --project-root /path/to/project
+pip install attogradDB
+attograddb setup
 ```
 
-If the host starts the server with the project as its working directory, `.` is a
-valid `--project-root`.
+`attograddb setup` detects the AI coding tools installed on your machine, asks which ones to
+configure and whether to set them up for **this project** or **globally**, then writes each
+tool's MCP server config and an instructions file so the agent actually calls the memory
+tools. No manual editing.
 
-## OpenCode
+```text
+$ attograddb setup
+Detected these tools:
+  1. Codex
+  2. Gemini CLI
+  3. OpenCode
+Configure which? [numbers, comma-separated, or 'all']: all
 
-Project file `opencode.jsonc`, or global `~/.config/opencode/opencode.jsonc`.
-OpenCode v2 nests servers under `mcp.servers`. `command` is one array. Default
-Code Mode wraps MCP tools; set `codemode` to `false` so recall and remember stay
-on the model's tool list.
+Install scope:
+  1. This project (writes into the current directory)
+  2. Global (writes into your home config for every project)
+Scope? [1/2, default 1]: 1
 
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "servers": {
-      "attograd-memory": {
-        "type": "local",
-        "command": [
-          "uvx",
-          "--from",
-          "attogradDB[mcp]==1.0.2",
-          "attograddb-mcp",
-          "--project-root",
-          "."
-        ],
-        "cwd": ".",
-        "codemode": false
-      }
-    }
-  }
-}
+Will configure Codex, Gemini CLI, OpenCode at project scope.
+Proceed? [y/N]: y
 ```
 
-## Hermes
+Restart the tool (or start a new session) afterwards. Then ask it to call `recall_decisions`
+before it plans — or rely on the instructions file the setup wrote.
 
-`~/.hermes/config.yaml`:
+### Non-interactive
 
-```yaml
-mcp_servers:
-  attograd-memory:
-    command: uvx
-    args:
-      - --from
-      - attogradDB[mcp]==1.0.2
-      - attograddb-mcp
-      - --project-root
-      - .
+Everything can be passed as flags, for scripts or dotfiles:
+
+```bash
+attograddb setup --tools codex,gemini,opencode --scope project --yes
+attograddb setup --tools cursor --scope global --yes
 ```
 
-Prefer editing the YAML. `hermes mcp add attograd-memory --command uvx` only sets
-the executable; add the `args` list in `config.yaml` if the CLI does not take them.
-Reload MCP or start a new session after editing.
+`--tools` accepts any of `codex`, `gemini`, `opencode`, `cursor`, `claude`. `--project-dir`
+overrides the target project (default: current directory).
 
-## Pi
+## Requirements
 
-Put the standard MCP map in `~/.pi/agent/mcp.json` (user-global) or `.mcp.json`
-(project). Some Pi builds also read `.pi/mcp.json`.
+- Python 3.11+.
+- Optional: [uv](https://docs.astral.sh/uv/getting-started/installation/). If `uvx` is on
+  your PATH, the generated config launches the server with it (self-contained and
+  version-pinned). Otherwise it uses the Python you installed AttogradDB into.
+
+## What it writes
+
+Project scope writes into the current directory; global scope writes into your home config.
+
+- **Codex** — `mcp_servers.attograd-memory` in `.codex/config.toml` (or `~/.codex/config.toml`),
+  plus an instructions block in `AGENTS.md`.
+- **Gemini CLI** — `mcpServers.attograd-memory` in `.gemini/settings.json` (or
+  `~/.gemini/settings.json`), plus `GEMINI.md`.
+- **OpenCode** — `mcp.attograd-memory` (`type: "local"`) in `opencode.json` (or
+  `~/.config/opencode/opencode.json`), plus `AGENTS.md`.
+- **Cursor** — `mcpServers.attograd-memory` in `.cursor/mcp.json` (or `~/.cursor/mcp.json`),
+  plus a `.cursor/rules/attograd-memory.mdc` rule. Use this only if the
+  [plugin](agents.md) is unavailable.
+- **Claude Code** — `mcpServers.attograd-memory` in `.mcp.json` (or `~/.claude.json`), plus a
+  `CLAUDE.md` block. Use this only if the [plugin](agents.md) is unavailable.
+
+Re-running `attograddb setup` is safe: it replaces its own entry and leaves the rest of each
+file untouched.
+
+## Manual MCP (Hermes, Pi, anything else)
+
+Any host that launches a local stdio MCP server can use AttogradDB directly. The server takes
+an optional `--project-root`; omit it and it uses `$CLAUDE_PROJECT_DIR` or the working
+directory.
+
+```bash
+attograddb-mcp --project-root /path/to/project
+```
+
+The equivalent host config, using `uvx` so nothing needs to be pre-installed:
 
 ```json
 {
@@ -86,50 +98,20 @@ Put the standard MCP map in `~/.pi/agent/mcp.json` (user-global) or `.mcp.json`
       "command": "uvx",
       "args": [
         "--from",
-        "attogradDB[mcp]==1.0.2",
+        "attogradDB[mcp]==1.1.0",
         "attograddb-mcp",
         "--project-root",
-        "."
+        "/path/to/project"
       ]
     }
   }
 }
 ```
 
-If a Pi extension requires `"transport": "stdio"`, add that field. The command
-and args stay the same.
+- **Hermes** — `mcp_servers:` map in `~/.hermes/config.yaml` (Linux/macOS/WSL2). Reload MCP
+  or start a new session after editing.
+- **Pi** — with the `pi-mcp-adapter` extension installed, the standard `mcpServers` map in
+  `~/.pi/agent/mcp.json` (global) or `.pi/mcp.json` (project).
 
-## Any other stdio MCP client
-
-Shape the host expects is usually one of:
-
-```json
-{
-  "command": "uvx",
-  "args": [
-    "--from",
-    "attogradDB[mcp]==1.0.2",
-    "attograddb-mcp",
-    "--project-root",
-    "/path/to/project"
-  ]
-}
-```
-
-or a single argv array:
-
-```json
-{
-  "command": [
-    "uvx",
-    "--from",
-    "attogradDB[mcp]==1.0.2",
-    "attograddb-mcp",
-    "--project-root",
-    "/path/to/project"
-  ]
-}
-```
-
-Pass the real project directory, not a shared global folder. After connect, ask
-the agent to call `recall_decisions` before it plans.
+Pass the real project directory, not a shared global folder, so each workspace gets its own
+`.attograd-memory.db`.

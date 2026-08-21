@@ -1,6 +1,6 @@
 {
   "name": "attograd-memory",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Project decision memory for Codex, backed by AttogradDB.",
   "author": {
     "name": "Goutham Krishnan",

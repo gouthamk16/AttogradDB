@@ -17,21 +17,24 @@ def test_docs_site_pages_exist() -> None:
         assert text.strip(), name
 
 
-def test_agent_docs_cover_manual_and_plugin_install() -> None:
+def test_agents_page_is_marketplace_only() -> None:
     text = (DOCS / "agents.md").read_text(encoding="utf-8")
-    assert "claude mcp add" in text
-    assert ".cursor/mcp.json" in text
-    assert "mcp_servers.attograd-memory" in text
+    assert "cursor.directory/plugins/attograd-memory" in text
     assert "/plugin install attograd-memory@attograd-plugins" in text
-    assert "until" in text.lower()
+    assert "recall_decisions" in text
+    # No manual MCP config on the marketplace page; that lives in other-harnesses.md.
+    assert ".cursor/mcp.json" not in text
+    assert "claude mcp add" not in text
 
 
-def test_other_harnesses_cover_opencode_hermes_pi() -> None:
+def test_other_harnesses_lead_with_setup_cli() -> None:
     text = (DOCS / "other-harnesses.md").read_text(encoding="utf-8")
-    assert "mcp.servers" in text or '"servers"' in text
-    assert "mcp_servers:" in text
-    assert "~/.pi/agent/mcp.json" in text
+    assert "attograddb setup" in text
+    for tool in ("Codex", "Gemini", "OpenCode"):
+        assert tool in text
     assert "attograddb-mcp" in text
+    # Hermes and Pi remain documented as manual stdio hosts.
+    assert "~/.pi/agent/mcp.json" in text
 
 
 def test_marketplace_docs_include_submission_urls() -> None:
