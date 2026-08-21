@@ -1,0 +1,20 @@
+title: AttogradDB
+description: A lightweight, local-first vector store for scoped semantic retrieval
+remote_theme: just-the-docs/just-the-docs@v0.10.1
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+
+url: https://gouthamk16.github.io
+baseurl: /AttogradDB
+
+search_enabled: true
+heading_anchors: true
+color_scheme: light
+
+aux_links:
+  GitHub:
+    - https://github.com/gouthamk16/AttogradDB
+  PyPI:
+    - https://pypi.org/project/attogradDB/
+aux_links_new_tab: true

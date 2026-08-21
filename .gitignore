@@ -10,3 +10,5 @@ ruff_cache/
 .pytest_cache/
 .attograd-memory.db
 .attograd-memory.db-*
+_site/
+.jekyll-cache/

@@ -27,6 +27,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/gouthamk16/AttogradDB"
+Documentation = "https://gouthamk16.github.io/AttogradDB/"
 
 [project.scripts]
 attograddb-mcp = "attogradDB.mcp_server:main"

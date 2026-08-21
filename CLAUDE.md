@@ -16,6 +16,7 @@ attogradDB/
   mcp_server.py  Project-scoped stdio MCP tools for remembering and recalling decisions.
   utils.py       read_pdf() via pypdf.
   tests/         pytest suites; conftest.py provides a stub embedder for the fast ones.
+docs/            GitHub Pages site (Just the Docs). Source for gouthamk16.github.io/AttogradDB.
 examples/        quickstart.py — the de-facto integration test.
 skills/          Shared agent guidance for the native host plugins.
 .claude-plugin/  Claude Code plugin manifest and marketplace metadata.
@@ -147,12 +148,15 @@ Run `/simplify` on the diff before requesting review. Don't merge with unresolve
 
 ## CI
 
-No workflow exists yet, but both commands below are real and green today, so a workflow can land whenever you want one. It triggers on push and PR to `main`:
+`.github/workflows/ci.yml` runs on push and PR to `main`, and on tags `v*`:
 
 - **lint** — `ruff check`
 - **test** — `python -m pytest attogradDB/tests`
+- **docs** — GitHub Pages from `docs/` on push to `main` and on `v*` tags (after lint/test)
+- **publish** — PyPI on `v*` tags only, using `PYPI_API_TOKEN`
 
-A red run blocks merge. Don't add stub jobs with nothing to run.
+A red lint or test run blocks merge. Pages must be set to deploy from GitHub Actions
+(Settings → Pages → Source). Don't add stub jobs with nothing to run.
 
 ## Measured decisions
 
