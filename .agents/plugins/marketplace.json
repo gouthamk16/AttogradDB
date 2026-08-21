@@ -6,6 +6,11 @@
       "source": {
         "path": "./"
       },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity",
       "interface": {
         "displayName": "AttogradDB Project Memory",
         "shortDescription": "Remember and recall durable project decisions.",

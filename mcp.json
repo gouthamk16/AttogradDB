@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "attograd-memory": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "attogradDB[mcp]==1.0.1",
+        "attograddb-mcp",
+        "--project-root",
+        "${workspaceFolder}"
+      ]
+    }
+  }
+}

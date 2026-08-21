@@ -1,6 +1,6 @@
 {
   "name": "attograd-memory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Project decision memory for Cursor, backed by AttogradDB.",
   "author": {
     "name": "Goutham Krishnan",
@@ -11,17 +11,5 @@
   "license": "MIT",
   "keywords": ["memory", "decisions", "mcp", "attograddb"],
   "skills": "./skills/",
-  "mcpServers": {
-    "attograd-memory": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "--from",
-        "attogradDB[mcp]==1.0.0",
-        "attograddb-mcp",
-        "--project-root",
-        "${workspaceFolder}"
-      ]
-    }
-  }
+  "mcpServers": "mcp.json"
 }

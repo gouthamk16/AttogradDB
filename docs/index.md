@@ -10,7 +10,7 @@ A lightweight, local-first vector store. One SQLite file, no server, no index to
 Search one project or one session without the rest bleeding in. Optional MCP tools remember
 and recall durable project decisions.
 
-Version 1.0.0
+Version 1.0.1
 
 [Python usage](usage.md){: .btn .btn-primary .mr-2 }
 [Agent plugins](agents.md){: .btn .btn-outline }

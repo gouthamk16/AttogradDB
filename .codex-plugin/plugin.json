@@ -1,6 +1,6 @@
 {
   "name": "attograd-memory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Project decision memory for Codex, backed by AttogradDB.",
   "author": {
     "name": "Goutham Krishnan",
@@ -11,16 +11,14 @@
   "license": "MIT",
   "keywords": ["memory", "decisions", "mcp", "attograddb"],
   "skills": "./skills/",
-  "mcpServers": {
-    "attograd-memory": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "attogradDB[mcp]==1.0.0",
-        "attograddb-mcp",
-        "--project-root",
-        "."
-      ]
-    }
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "AttogradDB Project Memory",
+    "shortDescription": "Remember and recall durable project decisions.",
+    "longDescription": "Adds local, project-scoped decision memory through AttogradDB over MCP. Recall active decisions before planning and record durable choices with explicit supersession.",
+    "developerName": "Goutham Krishnan",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/gouthamk16/AttogradDB"
   }
 }
