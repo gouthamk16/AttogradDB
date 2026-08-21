@@ -131,9 +131,9 @@ The default path is CPU-only int8. A GPU path was measured and removed: ingest w
 ## Decision memory
 
 Structured project decisions live in the same SQLite file, in a `decisions` table. They are
-loaded in full, not searched. Install and use that surface from Claude Code, Cursor, Codex,
-or a raw MCP config in [Agent plugins](agents.md). A library-level counterpart is
-`examples/mcp_memory.py`.
+loaded in full, not searched. Install that surface in [Claude Code and Cursor](agents.md) as
+a plugin, or run `attograddb setup` for [every other tool](other-harnesses.md). A
+library-level counterpart is `examples/mcp_memory.py`.
 
 ## What this store does not do
 

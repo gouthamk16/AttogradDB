@@ -5,13 +5,14 @@ description: Light speed memory for your agents — a local-first vector store a
 ---
 
 <div class="attograd-hero" markdown="0">
-  <p class="attograd-eyebrow">AttogradDB · v1.0.2</p>
+  <p class="attograd-eyebrow">AttogradDB · v1.1.0</p>
   <h1 class="attograd-tagline">Light speed memory for your agents</h1>
   <p class="attograd-sub">A local-first vector store in one SQLite file. No server, no index to tune. Search one project or one session without the rest bleeding in — and give Claude Code, Cursor, or Codex durable project memory over MCP.</p>
 </div>
 
 [Python usage](usage.md){: .btn .btn-primary .mr-2 }
-[Agent plugins](agents.md){: .btn .mr-2 }
+[Claude Code & Cursor](agents.md){: .btn .mr-2 }
+[Every other tool](other-harnesses.md){: .btn .mr-2 }
 [GitHub](https://github.com/gouthamk16/AttogradDB){: .btn }
 
 ## Install
@@ -32,9 +33,9 @@ Host plugins bootstrap that extra for you with `uvx` — install [uv](https://do
 
 | You want to… | Go to |
 | --- | --- |
+| Give Claude Code or Cursor project memory (plugin) | [Claude Code and Cursor](agents.md) |
+| Set up Codex, Gemini CLI, OpenCode, or any MCP host | [Every other tool](other-harnesses.md) |
 | Ingest documents and search them from Python | [Python usage](usage.md) |
-| Give Claude Code, Cursor, or Codex project memory | [Agent plugins](agents.md) |
-| Wire up OpenCode, Hermes, Pi, or any stdio MCP host | [Other harnesses](other-harnesses.md) |
 | Get AttogradDB listed in a plugin marketplace | [Marketplace listings](marketplace.md) |
 
 ## Two tools, one database
@@ -44,4 +45,4 @@ The agent surface is deliberately small. Both tools operate on a per-project `.a
 - **`recall_decisions`** — every active decision for this project, in order. Call it before planning or editing.
 - **`remember_decision`** — record a durable choice, with an explicit `supersedes` when it replaces an older one.
 
-Install the plugin once at the host's global scope, or add a direct MCP config. Either way you get the same tools and the same database layout — no public marketplace listing required.
+Install the [plugin](agents.md) in Cursor or Claude Code, or run [`attograddb setup`](other-harnesses.md) for every other tool. Either way you get the same tools and the same database layout.
