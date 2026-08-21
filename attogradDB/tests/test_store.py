@@ -44,6 +44,11 @@ def test_search_top_n_larger_than_store(store):
     assert len(store.search("fox", top_n=99)) == 3
 
 
+def test_search_top_n_zero_returns_empty(store):
+    store.add(DOCS)
+    assert store.search("fox", top_n=0) == []
+
+
 def test_results_are_ordered_by_descending_score(store):
     store.add(DOCS)
     scores = [score for _, score, _ in store.search("fox")]

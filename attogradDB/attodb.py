@@ -206,6 +206,9 @@ class VectorStore:
         if len(self._ids) == 0:
             return []
 
+        if top_n <= 0:
+            return []
+
         rows = self._scope_rows(project, session, kind)
         if rows is not None and len(rows) == 0:
             return []
