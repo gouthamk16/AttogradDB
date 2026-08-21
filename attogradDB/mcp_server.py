@@ -4,8 +4,14 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from mcp.server import MCPServer
-from mcp.server.mcpserver import Context
+try:
+    from mcp.server import MCPServer
+    from mcp.server.mcpserver import Context
+except ImportError as exc:
+    raise ImportError(
+        'attograddb-mcp requires the optional MCP extra. '
+        'Install it with: pip install "attogradDB[mcp]"'
+    ) from exc
 
 from attogradDB.attodb import VectorStore
 from attogradDB.memory import Decision, init_memory

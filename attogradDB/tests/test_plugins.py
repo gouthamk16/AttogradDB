@@ -24,7 +24,7 @@ def test_plugin_manifests_bind_the_active_project(path: str, project_root: str) 
     assert server["command"] == "uvx"
     assert server["args"] == [
         "--from",
-        "attogradDB[mcp]",
+        "attogradDB[mcp]==1.0.0",
         "attograddb-mcp",
         "--project-root",
         project_root,
