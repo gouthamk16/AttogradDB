@@ -1,4 +1,5 @@
 import argparse
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -93,12 +94,27 @@ def create_server(
     return server
 
 
+def resolve_project_root(explicit: str | None) -> str:
+    """Pick the project root: an explicit path, else $CLAUDE_PROJECT_DIR, else the cwd.
+
+    Hosts that cannot expand a path variable in their config (Codex, Gemini) omit
+    --project-root and launch the server in the workspace; Claude Code injects
+    CLAUDE_PROJECT_DIR into the environment instead of expanding it in args.
+    """
+    return explicit or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run AttogradDB decision memory over MCP stdio")
-    parser.add_argument("--project-root", required=True)
+    parser.add_argument(
+        "--project-root",
+        default=None,
+        help="Project directory to scope memory to. "
+        "Defaults to $CLAUDE_PROJECT_DIR, then the current working directory.",
+    )
     parser.add_argument("--db", help="Override the default <project-root>/.attograd-memory.db")
     args = parser.parse_args()
-    create_server(args.project_root, args.db).run()
+    create_server(resolve_project_root(args.project_root), args.db).run()
 
 
 if __name__ == "__main__":

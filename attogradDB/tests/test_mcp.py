@@ -1,7 +1,7 @@
 import pytest
 from mcp import Client
 
-from attogradDB.mcp_server import create_server
+from attogradDB.mcp_server import create_server, resolve_project_root
 
 
 @pytest.fixture
@@ -13,6 +13,22 @@ def anyio_backend():
 async def client(tmp_path):
     async with Client(create_server(tmp_path), raise_exceptions=True) as connected:
         yield connected
+
+
+def test_project_root_prefers_explicit_then_env_then_cwd(tmp_path, monkeypatch):
+    explicit = tmp_path / "explicit"
+    env = tmp_path / "from-env"
+    cwd = tmp_path / "cwd"
+    for path in (explicit, env, cwd):
+        path.mkdir()
+    monkeypatch.chdir(cwd)
+
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(env))
+    assert resolve_project_root(str(explicit)) == str(explicit)
+    assert resolve_project_root(None) == str(env)
+
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR")
+    assert resolve_project_root(None) == str(cwd)
 
 
 @pytest.mark.anyio
