@@ -4,7 +4,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "attogradDB[mcp]==1.0.2",
+        "attogradDB[mcp]==1.1.0",
         "attograddb-mcp",
         "--project-root",
         "."
